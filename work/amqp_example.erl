@@ -12,7 +12,7 @@ test() ->
 	{ok, Channel} = amqp_connection:open_channel(Connection),
 	#'queue.declare_ok'{queue = Q} = amqp_channel:call(Channel, #'queue.declare'{}),
 	Payload = <<"foobar">>,
-	Publish = #'basic.publish'{exchange = <<>>, routing_key = Q},
+	Publish = #'basic.publish'{exchange = <<"time">>, routing_key = Q},
 	amqp_channel:cast(Channel, Publish, #amqp_msg{payload = Payload}),
 	Get = #'basic.get'{queue = Q},
 	{#'basic.get_ok'{delivery_tag = Tag}, Content} = amqp_channel:call(Channel, Get),
