@@ -17,3 +17,16 @@ clean:
  
 doc:
 	$(REBAR) doc
+
+release:
+	$(REBAR) get-deps compile
+	cd rel; $(REBAR) generate
+
+run:
+	./rel/easymmo/bin/easymmo start
+
+stop-app:
+	./rel/easymmo/bin/easymmo stop
+
+console:
+	./rel/easymmo/bin/easymmo attach
