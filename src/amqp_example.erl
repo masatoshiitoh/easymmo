@@ -2,13 +2,14 @@
 -include("amqp_client.hrl").
 -compile([export_all]).
  
+-export([test/0]).
+
 test() ->
 	{ok, Connection} =
-	    amqp_connection:start({network,
-		#amqp_params_network{
-		    %% host = "27.120.111.23"
+	    amqp_connection:start(#amqp_params_network{
+		    host = "27.120.111.23"
 		    %% host = "moqmoq.info"
-		}}),
+		}),
 	{ok, Channel} = amqp_connection:open_channel(Connection),
 	#'queue.declare_ok'{queue = Q} = amqp_channel:call(Channel, #'queue.declare'{}),
 	Payload = <<"foobar">>,
