@@ -5,4 +5,5 @@
               {applications,[kernel,stdlib]},
               {mod,{easymmo_app,[]}},
               {env,[]},
-              {modules,[amqp_example,easymmo_app,easymmo_sup,time_feeder]}]}.
+              {modules,[amqp_example,chat_srv,easymmo_app,easymmo_sup,
+                        time_feeder]}]}.
