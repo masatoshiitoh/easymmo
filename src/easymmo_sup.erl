@@ -23,5 +23,15 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, []} }.
+	ChildSpec = [time_feeder()],
+    {ok, { {one_for_one, 5, 10}, ChildSpec} }.
+
+time_feeder() ->
+	ID = time_feeder,
+	StartFunc = {time_feeder, start_link, []},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [time_feeder],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 

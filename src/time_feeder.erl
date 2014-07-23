@@ -1,13 +1,10 @@
 -module(time_feeder).
 -include_lib("amqp_client.hrl").
 
--export([start/0, feed_one/2]).
+-export([feed_one/2]).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3]).
-
-start() ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 start_link() ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
