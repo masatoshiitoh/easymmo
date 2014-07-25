@@ -73,6 +73,7 @@ close_exchange(Connection, Channel) ->
 
 %% gen_server behaviour %%        
 terminate(Reason, State) ->
+	%% TODO: write stopping code here!!
 	ok.
 
 handle_call({feed_one, ServerIp, Exchange}, From, State) ->
