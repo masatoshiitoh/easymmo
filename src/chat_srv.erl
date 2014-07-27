@@ -4,27 +4,30 @@
 -export([start_link/0]).
 -export([terminate/2]).
 -export([init/1, handle_call/3]).
--export([loop/4]).
+-export([start_loop/3]).
 
 start_link() ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init(_Args) ->
-	{ok, []}.
+	{ok, dict:new()}.
 
 %%
 %% APIs
 %%
-start_service(ServerIp, Exchange) ->
-	Reply = gen_server:call(?MODULE, {stop_feed, ServerIp, Exchange}).
+start_service(ServerIp, ToClientEx, FromClientEx)
+	when is_binary(ToClientEx), is_binary(FromClientEx) ->
+
+	Reply = gen_server:call(?MODULE, {start_service, ServerIp, ToClientEx, FromClientEx}).
 
 %%
 %% Internal use.
 %%
 
-start_service(_Argv) ->
-    InboundExchange = <<"xin">>,
-    OutboundExchange = <<"xout">>,
+start_loop(ServerIp, ToClientEx, FromClientEx) ->
+    InboundExchange = FromClientEx,
+    OutboundExchange = ToClientEx, 
+
     
     % コネクション開く
     {ok, Connection} =
@@ -67,37 +70,38 @@ start_service(_Argv) ->
 
 
 loop(ChOut, OutboundExchange) ->
-    %% 購読中は#amqp_msgでメッセージが飛んでくる。
-    receive
-        {#'basic.deliver'{}, #amqp_msg{payload = Body}} ->
-            io:format(" [x] ~p~n", [Body]),
+	%% 購読中は#amqp_msgでメッセージが飛んでくる。
+	receive
+		{#'basic.deliver'{}, #amqp_msg{payload = Body}} ->
+			io:format(" [x] ~p~n", [Body]),
 
-	    Message = <<"info: Hello World!">>,
-	    % エクスチェンジにメッセージ送信。
-	    amqp_channel:cast(ChOut,
-			      #'basic.publish'{exchange = OutboundExchange},
-			      #amqp_msg{payload = Message}),
-	    io:format(" [x] Sent ~p~n", [Message]),
+			Message = <<"info: Hello World!">>,
+			% エクスチェンジにメッセージ送信。
+			amqp_channel:cast(ChOut,
+			#'basic.publish'{exchange = OutboundExchange},
+			#amqp_msg{payload = Message}),
+			io:format(" [x] Sent ~p~n", [Message]),
 
-            loop(ChOut, OutboundExchange);
-    	_ -> 0
-    end.
+			loop(ChOut, OutboundExchange);
+
+		"stop" -> ok 
+	end.
 
 
 %% gen_server behaviour %%        
 terminate(Reason, State) ->
 	ok.
 
-handle_call({feed, ServerIp, Exchange, Interval}, From, State) ->
+handle_call({start_service, ServerIp, ToClientEx, FromClientEx}, From, State) ->
 
 	%%
 	%% check existing process
 	%%
-	Value = dict:find({ServerIp, Exchange}, State),
+	Value = dict:find({ServerIp, ToClientEx, FromClientEx}, State),
 	NS = case Value of
 		ExistingPid when is_pid(ExistingPid) ->
 			ExistingPid ! "stop",
-			dict:erase({ServerIp, Exchange}, State);
+			dict:erase({ServerIp, ToClientEx, FromClientEx}, State);
 		_ ->
 			State
 	end,
@@ -105,8 +109,7 @@ handle_call({feed, ServerIp, Exchange, Interval}, From, State) ->
 	%%
 	%% start new feeder loop
 	%%
-	{ok, Connection, Channel} = init_fanout_exchange(ServerIp, Exchange),
-	Pid = spawn(?MODULE, loop, [Connection, Channel, Exchange, Interval]),
-	NewState = dict:store({ServerIp, Exchange}, Pid, NS),
-	{reply, ok, NewState};
+	Pid = spawn(?MODULE, start_loop, [ServerIp, ToClientEx, FromClientEx]),
+	NewState = dict:store({ServerIp, ToClientEx, FromClientEx}, Pid, NS),
+	{reply, ok, NewState}.
 
