@@ -35,7 +35,7 @@ start_loop(ServerIp, ToClientEx, FromClientEx) ->
     
     % コネクション開く
     {ok, Connection} =
-        amqp_connection:start(#amqp_params_network{host = "localhost"}),
+        amqp_connection:start(#amqp_params_network{host = ServerIp}),
 
     %% 送信用
     % OUTチャネル開く
