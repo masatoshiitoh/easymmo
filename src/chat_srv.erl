@@ -6,6 +6,9 @@
 -export([init/1, handle_call/3]).
 -export([start_loop/3]).
 
+-export([start_service/3]).
+-export([stop_service/3]).
+
 start_link() ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
@@ -17,9 +20,10 @@ init(_Args) ->
 %%
 start_service(ServerIp, ToClientEx, FromClientEx)
 	when is_binary(ToClientEx), is_binary(FromClientEx) ->
-
 	Reply = gen_server:call(?MODULE, {start_service, ServerIp, ToClientEx, FromClientEx}).
 
+stop_service(ServerIp, ToClientEx, FromClientEx) ->
+	Reply = gen_server:call(?MODULE, {stop_service, ServerIp, ToClientEx, FromClientEx}).
 %%
 %% Internal use.
 %%
@@ -90,6 +94,7 @@ loop(ChOut, OutboundExchange) ->
 
 %% gen_server behaviour %%        
 terminate(Reason, State) ->
+	%% TODO: write stopping code here!!
 	ok.
 
 handle_call({start_service, ServerIp, ToClientEx, FromClientEx}, From, State) ->
@@ -111,5 +116,15 @@ handle_call({start_service, ServerIp, ToClientEx, FromClientEx}, From, State) ->
 	%%
 	Pid = spawn(?MODULE, start_loop, [ServerIp, ToClientEx, FromClientEx]),
 	NewState = dict:store({ServerIp, ToClientEx, FromClientEx}, Pid, NS),
-	{reply, ok, NewState}.
+	{reply, ok, NewState};
+
+handle_call({stop_service, ServerIp, ToClientEx, FromClientEx}, From, State) ->
+	case dict:find({ServerIp, ToClientEx, FromClientEx}, State) of
+		error ->
+			{reply, {error, notfound} , State};
+		{ok, Pid} when is_pid(Pid) ->
+			Pid ! "stop", %% <== stop process
+			NewState = dict:erase({ServerIp, ToClientEx, FromClientEx}, State),
+			{reply, {ok, Pid} , NewState} 
+		end.
 
