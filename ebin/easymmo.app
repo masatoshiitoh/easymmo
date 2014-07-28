@@ -6,4 +6,4 @@
               {mod,{easymmo_app,[]}},
               {env,[]},
               {modules,[amqp_example,chat_srv,easymmo_app,easymmo_sup,
-                        time_feeder]}]}.
+                        move_srv,time_feeder]}]}.

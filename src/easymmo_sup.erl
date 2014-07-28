@@ -23,7 +23,7 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-	ChildSpec = [time_feeder()],
+	ChildSpec = [time_feeder(), chat_srv(), move_srv()],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
 time_feeder() ->
@@ -33,5 +33,24 @@ time_feeder() ->
 	Shutdown = brutal_kill,
 	Type = worker,
 	Modules = [time_feeder],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+
+chat_srv() ->
+	ID = chat_srv,
+	StartFunc = {chat_srv, start_link, []},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [chat_srv],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+move_srv() ->
+	ID = move_srv,
+	StartFunc = {move_srv, start_link, []},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [move_srv],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
