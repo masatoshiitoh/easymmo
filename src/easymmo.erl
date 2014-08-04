@@ -4,10 +4,10 @@
 
 
 start() ->
-	ToClient="chat_out",
-	FromClient="chat_out",
-	ToMClient="move_out",
-	FromMClient="move_out",
+	ToClient="xout",
+	FromClient="xin",
+	ToMClient="xout",
+	FromMClient="xin",
 	ServerIp="localhost",
 	IntervalMs = 1000,
 	Exchange = <<"time">>,
@@ -17,10 +17,10 @@ start() ->
 	ok.
 
 stop() ->
-	ToClient="chat_out",
-	FromClient="chat_out",
-	ToMClient="move_out",
-	FromMClient="move_out",
+	ToClient="xout",
+	FromClient="xin",
+	ToMClient="xout",
+	FromMClient="xin",
 	ServerIp="localhost",
 	Exchange = <<"time">>,
 	chat_srv:stop_service(ServerIp, ToClient, FromClient),
