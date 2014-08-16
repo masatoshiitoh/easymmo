@@ -1,130 +1,85 @@
+%%
+%% move_srv.erl
+%%
+%%
+
 -module(move_srv).
 -include_lib("amqp_client.hrl").
 
--export([start_link/0]).
+-export([start_link/3]).
 -export([terminate/2]).
--export([init/1, handle_call/3]).
--export([start_loop/3]).
+-export([init/1]).
+%%-export([handle_call/3]).
+-export([handle_info/2]).
 
--export([start_service/3]).
--export([stop_service/3]).
+start_link(ServerIp, ToClientEx, FromClientEx) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [ServerIp, ToClientEx, FromClientEx], []).
 
-start_link() ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
-
-init(_Args) ->
-	{ok, dict:new()}.
+init(Args) ->
+	[ServerIp, ToClientEx, FromClientEx] = Args,
+	{Connection, ChTC, ChFC} = setup_connection(ServerIp, ToClientEx, FromClientEx),
+	NewState = {ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}},
+	{ok, NewState}.
 
 %%
 %% APIs
 %%
-start_service(ServerIp, ToClientEx, FromClientEx)
-	when is_binary(ToClientEx), is_binary(FromClientEx) ->
-	Reply = gen_server:call(?MODULE, {start_service, ServerIp, ToClientEx, FromClientEx}).
 
-stop_service(ServerIp, ToClientEx, FromClientEx) ->
-	Reply = gen_server:call(?MODULE, {stop_service, ServerIp, ToClientEx, FromClientEx}).
 %%
 %% Internal use.
 %%
 
-start_loop(ServerIp, ToClientEx, FromClientEx) ->
-    InboundExchange = FromClientEx,
-    OutboundExchange = ToClientEx, 
-
-    
+setup_connection(ServerIp, ToClientEx, FromClientEx) ->
     % コネクション開く
     {ok, Connection} =
         amqp_connection:start(#amqp_params_network{host = ServerIp}),
 
-    %% 送信用
-    % OUTチャネル開く
-    {ok, ChOut} = amqp_connection:open_channel(Connection),
+    %% 送信用(exchange name = FromClientEx, channel = ChFC)
+    % チャネル開く
+    {ok, ChTC} = amqp_connection:open_channel(Connection),
     % エクスチェンジを宣言
-    amqp_channel:call(ChOut, #'exchange.declare'{exchange = OutboundExchange, type = <<"fanout">>}),
+    amqp_channel:call(ChTC, #'exchange.declare'{exchange = ToClientEx, type = <<"fanout">>}),
 
-    %% 受信用
-    % Inチャネルを開く
-    {ok, ChIn} = amqp_connection:open_channel(Connection),
+    %% 受信用(exchange name = ToClientEx, channel = ChTC)
+    % OUTチャネルを開く
+    {ok, ChFC} = amqp_connection:open_channel(Connection),
     % エクスチェンジを宣言
-    amqp_channel:call(ChIn, #'exchange.declare'{exchange = InboundExchange, type = <<"fanout">>}),
-    % Inキューを宣言する。
-    #'queue.declare_ok'{queue = Queue} = amqp_channel:call(ChIn, #'queue.declare'{exclusive = true}),
-    % 指定のOUTエクスチェンジに受信キューをバインドする。
-    amqp_channel:call(ChIn, #'queue.bind'{exchange = InboundExchange, queue = Queue}),
+    amqp_channel:call(ChFC, #'exchange.declare'{exchange = FromClientEx, type = <<"fanout">>}),
+    % クライアント宛キューを宣言する。
+    #'queue.declare_ok'{queue = Queue} = amqp_channel:call(ChFC, #'queue.declare'{exclusive = true}),
+    % 指定のエクスチェンジに受信キューをバインドする。
+    amqp_channel:call(ChFC, #'queue.bind'{exchange = FromClientEx, queue = Queue}),
     % 指定のキューの購読開始。
-    amqp_channel:subscribe(ChIn, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+    amqp_channel:subscribe(ChFC, #'basic.consume'{queue = Queue, no_ack = true}, self()),
 
-    % ok待ち
-    io:format(" [*] Waiting for logs. To exit press CTRL+C~n"),
-    receive
-        #'basic.consume_ok'{} -> ok
-    end,
-    % 受信ループ。
-    loop(ChOut, OutboundExchange),
+	{Connection, ChTC, ChFC}.
 
+shutdown_connect(Connection, ChTC, ChFC) ->
     % チャネル閉じる。
-    ok = amqp_channel:close(ChIn),
+    ok = amqp_channel:close(ChFC),
     % チャネル閉じる。
-    ok = amqp_channel:close(ChOut),
-
+    ok = amqp_channel:close(ChTC),
     % コネクション閉じる。
     ok = amqp_connection:close(Connection),
-    ok.
-
-
-loop(ChOut, OutboundExchange) ->
-	%% 購読中は#amqp_msgでメッセージが飛んでくる。
-	receive
-		{#'basic.deliver'{}, #amqp_msg{payload = Body}} ->
-			io:format(" [x] ~p~n", [Body]),
-
-			Message = <<"info: Hello World!">>,
-			% エクスチェンジにメッセージ送信。
-			amqp_channel:cast(ChOut,
-			#'basic.publish'{exchange = OutboundExchange},
-			#amqp_msg{payload = Message}),
-			io:format(" [x] Sent ~p~n", [Message]),
-
-			loop(ChOut, OutboundExchange);
-
-		"stop" -> ok 
-	end.
-
+	ok.
 
 %% gen_server behaviour %%        
 terminate(Reason, State) ->
-	%% TODO: write stopping code here!!
+	{ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}} = State,
+	shutdown_connect(Connection, ChTC, ChFC),
 	ok.
 
-handle_call({start_service, ServerIp, ToClientEx, FromClientEx}, From, State) ->
+%% just after setup, this message will arrive.
+handle_info(#'basic.consume_ok'{}, State) ->
+	{noreply, State};
 
-	%%
-	%% check existing process
-	%%
-	Value = dict:find({ServerIp, ToClientEx, FromClientEx}, State),
-	NS = case Value of
-		ExistingPid when is_pid(ExistingPid) ->
-			ExistingPid ! "stop",
-			dict:erase({ServerIp, ToClientEx, FromClientEx}, State);
-		_ ->
-			State
-	end,
+%% while subscribing, message will be delivered by #amqp_msg
+handle_info( {#'basic.deliver'{}, #amqp_msg{payload = Body}} , State) ->
+	{ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}} = State,
+	Message = <<"info: Hello, this is move_srv!">>,
+	amqp_channel:cast(ChTC,
+		#'basic.publish'{exchange = ToClientEx},
+		#amqp_msg{payload = Message}),
+	{noreply, State}.
 
-	%%
-	%% start new feeder loop
-	%%
-	Pid = spawn(?MODULE, start_loop, [ServerIp, ToClientEx, FromClientEx]),
-	NewState = dict:store({ServerIp, ToClientEx, FromClientEx}, Pid, NS),
-	{reply, ok, NewState};
-
-handle_call({stop_service, ServerIp, ToClientEx, FromClientEx}, From, State) ->
-	case dict:find({ServerIp, ToClientEx, FromClientEx}, State) of
-		error ->
-			{reply, {error, notfound} , State};
-		{ok, Pid} when is_pid(Pid) ->
-			Pid ! "stop", %% <== stop process
-			NewState = dict:erase({ServerIp, ToClientEx, FromClientEx}, State),
-			{reply, {ok, Pid} , NewState} 
-		end.
 

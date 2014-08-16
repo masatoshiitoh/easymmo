@@ -23,12 +23,19 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-	ChildSpec = [time_feeder(), chat_srv(), move_srv()],
+	ChildSpec = [
+	time_feeder(), 
+	chat_srv(),
+	move_srv()
+	],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
 time_feeder() ->
+	time_feeder_one("localhost", <<"time">> ).
+
+time_feeder_one(IpAddr, ToClientEx) ->
 	ID = time_feeder,
-	StartFunc = {time_feeder, start_link, []},
+	StartFunc = {time_feeder, start_link, [IpAddr, ToClientEx]},
 	Restart = permanent,
 	Shutdown = brutal_kill,
 	Type = worker,
@@ -37,8 +44,11 @@ time_feeder() ->
 
 
 chat_srv() ->
+	chat_srv_one("localhost", <<"xout">>, <<"xin">> ).
+
+chat_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = chat_srv,
-	StartFunc = {chat_srv, start_link, []},
+	StartFunc = {chat_srv, start_link, [ServerIp, ToClientEx, FromClientEx]},
 	Restart = permanent,
 	Shutdown = brutal_kill,
 	Type = worker,
@@ -46,8 +56,11 @@ chat_srv() ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 move_srv() ->
+	move_srv_one("localhost", <<"xout">>, <<"xin">> ).
+
+move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = move_srv,
-	StartFunc = {move_srv, start_link, []},
+	StartFunc = {move_srv, start_link, [ServerIp, ToClientEx, FromClientEx]},
 	Restart = permanent,
 	Shutdown = brutal_kill,
 	Type = worker,
