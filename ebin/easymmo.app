@@ -5,5 +5,5 @@
               {applications,[kernel,stdlib]},
               {mod,{easymmo_app,[]}},
               {env,[]},
-              {modules,[chat_srv,easymmo,easymmo_app,easymmo_sup,move_srv,
-                        time_feeder]}]}.
+              {modules,[bidir_mq,chat_srv,easymmo,easymmo_app,easymmo_sup,
+                        move_srv,time_feeder]}]}.
