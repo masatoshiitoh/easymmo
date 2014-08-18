@@ -16,7 +16,7 @@ start_link(ServerIp, ToClientEx, FromClientEx) ->
 
 init(Args) ->
 	[ServerIp, ToClientEx, FromClientEx] = Args,
-	{ok, bidir_mq:init_fanout(ServerIp, ToClientEx, FromClientEx)}.
+	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.map.*">>, <<"whisper.id.*">>])}.
 
 %%
 %% APIs
@@ -32,9 +32,9 @@ handle_info(#'basic.consume_ok'{}, State) ->
 	{noreply, State};
 
 %% while subscribing, message will be delivered by #amqp_msg
-handle_info( {#'basic.deliver'{}, #amqp_msg{payload = _Body}} , State) ->
+handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	Message = <<"info: Hello, this is chat_srv!">>,
+	Message = <<"info: Hello, this is chat_srv! ">> + Body,
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = ToClientEx},
 		#amqp_msg{payload = Message}),

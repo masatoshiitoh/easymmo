@@ -12,46 +12,72 @@
 -export([setup_fanout/3]).
 -export([shutdown_connect/3]).
 
+
 init_fanout(ServerIp, ToClientEx, FromClientEx) ->
 	{Connection, ChTC, ChFC} = setup_fanout(ServerIp, ToClientEx, FromClientEx),
+	{ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}}.
+
+init_topic(ServerIp, ToClientEx, FromClientEx, ReceiveTopicList) ->
+	{Connection, ChTC, ChFC} = setup_topic(ServerIp, ToClientEx, FromClientEx, ReceiveTopicList),
 	{ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}}.
 
 shutdown_by_state(State) ->
 	{_ServerIp, _ToClientEx, _FromClientEx, {Connection, ChTC, ChFC}} = State,
 	shutdown_connect(Connection, ChTC, ChFC).
 
-setup_fanout(ServerIp, ToClientEx, FromClientEx) ->
-    % コネクション開く
-    {ok, Connection} =
-        amqp_connection:start(#amqp_params_network{host = ServerIp}),
-
-    %% 送信用(exchange name = FromClientEx, channel = ChFC)
-    % チャネル開く
-    {ok, ChTC} = amqp_connection:open_channel(Connection),
-    % エクスチェンジを宣言
-    amqp_channel:call(ChTC, #'exchange.declare'{exchange = ToClientEx, type = <<"fanout">>}),
-
-    %% 受信用(exchange name = ToClientEx, channel = ChTC)
-    % OUTチャネルを開く
-    {ok, ChFC} = amqp_connection:open_channel(Connection),
-    % エクスチェンジを宣言
-    amqp_channel:call(ChFC, #'exchange.declare'{exchange = FromClientEx, type = <<"fanout">>}),
-    % クライアント宛キューを宣言する。
-    #'queue.declare_ok'{queue = Queue} = amqp_channel:call(ChFC, #'queue.declare'{exclusive = true}),
-    % 指定のエクスチェンジに受信キューをバインドする。
-    amqp_channel:call(ChFC, #'queue.bind'{exchange = FromClientEx, queue = Queue}),
-    % 指定のキューの購読開始。
-    amqp_channel:subscribe(ChFC, #'basic.consume'{queue = Queue, no_ack = true}, self()),
-
-	{Connection, ChTC, ChFC}.
-
 shutdown_connect(Connection, ChTC, ChFC) ->
-    % チャネル閉じる。
     ok = amqp_channel:close(ChFC),
-    % チャネル閉じる。
     ok = amqp_channel:close(ChTC),
-    % コネクション閉じる。
     ok = amqp_connection:close(Connection),
 	ok.
+
+%%
+%% Setup fanout in/out
+%%
+setup_fanout(ServerIp, ToClientEx, FromClientEx) ->
+    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
+	ChTC = setup_emit_fanout(Connection, ToClientEx),
+	ChFC = setup_receive_fanout(Connection, FromClientEx),
+	{Connection, ChTC, ChFC}.
+
+setup_emit_fanout(Connection, Exchange) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"fanout">>}),
+	Ch.
+
+setup_receive_fanout(Connection, Exchange) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"fanout">>}),
+    #'queue.declare_ok'{queue = Queue} = amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
+    amqp_channel:call(Ch, #'queue.bind'{exchange = Exchange, queue = Queue}),
+    amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+	Ch.
+
+%%
+%% Setup topic in/out
+%%
+setup_topic(ServerIp, ToClientEx, FromClientEx, ReceiveTopicList) ->
+    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
+	ChTC = setup_emit_topics(Connection, ToClientEx),
+	ChFC = setup_receive_topics(Connection, FromClientEx, ReceiveTopicList),
+	{Connection, ChTC, ChFC}.
+
+setup_emit_topics(Connection, Exchange) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>}),
+	Ch.
+
+setup_receive_topics(Connection, Exchange, TopicList) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>}),
+	#'queue.declare_ok'{queue = Queue} =
+	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
+	[amqp_channel:call(Ch, #'queue.bind'{
+		exchange = Exchange,
+		routing_key = list_to_binary(BindingKey),
+		queue = Queue})
+	|| BindingKey <- TopicList],
+	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+	Ch.
 
 
