@@ -8,8 +8,10 @@
 -include_lib("amqp_client.hrl").
 
 -export([init_fanout/3]).
+-export([init_topic/4]).
 -export([shutdown_by_state/1]).
 -export([setup_fanout/3]).
+-export([setup_topic/4]).
 -export([shutdown_connect/3]).
 
 
@@ -42,12 +44,12 @@ setup_fanout(ServerIp, ToClientEx, FromClientEx) ->
 
 setup_emit_fanout(Connection, Exchange) ->
     {ok, Ch} = amqp_connection:open_channel(Connection),
-    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"fanout">>}),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"fanout">>, auto_delete = true}),
 	Ch.
 
 setup_receive_fanout(Connection, Exchange) ->
     {ok, Ch} = amqp_connection:open_channel(Connection),
-    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"fanout">>}),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"fanout">>, auto_delete = true}),
     #'queue.declare_ok'{queue = Queue} = amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
     amqp_channel:call(Ch, #'queue.bind'{exchange = Exchange, queue = Queue}),
     amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
@@ -64,17 +66,17 @@ setup_topic(ServerIp, ToClientEx, FromClientEx, ReceiveTopicList) ->
 
 setup_emit_topics(Connection, Exchange) ->
     {ok, Ch} = amqp_connection:open_channel(Connection),
-    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>}),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
 	Ch.
 
 setup_receive_topics(Connection, Exchange, TopicList) ->
     {ok, Ch} = amqp_connection:open_channel(Connection),
-    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>}),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
 	#'queue.declare_ok'{queue = Queue} =
 	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
 	[amqp_channel:call(Ch, #'queue.bind'{
 		exchange = Exchange,
-		routing_key = list_to_binary(BindingKey),
+		routing_key = BindingKey,
 		queue = Queue})
 	|| BindingKey <- TopicList],
 	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),

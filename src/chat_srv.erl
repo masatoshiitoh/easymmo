@@ -36,7 +36,7 @@ handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = B
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	Message = <<"info: Hello, this is chat_srv! ">> + Body,
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = ToClientEx},
+		#'basic.publish'{exchange = ToClientEx, routing_key = <<"id.99999">> },
 		#amqp_msg{payload = Message}),
 	{noreply, State}.
 
