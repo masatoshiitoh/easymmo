@@ -16,7 +16,7 @@ start_link(ServerIp, ToClientEx, FromClientEx) ->
 
 init(Args) ->
 	[ServerIp, ToClientEx, FromClientEx] = Args,
-	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>])}.
+	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>, <<"move.#">>])}.
 
 %%
 %% APIs
@@ -39,5 +39,4 @@ handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = B
 		#'basic.publish'{exchange = ToClientEx, routing_key = <<"id.99999">> },
 		#amqp_msg{payload = Message}),
 	{noreply, State}.
-
 
