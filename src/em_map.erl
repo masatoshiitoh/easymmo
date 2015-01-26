@@ -3,7 +3,7 @@
 %%
 %% Easymmo map manager (users can be located in one map.)
 
--module(npc_pool).
+-module(em_map).
 -include_lib("amqp_client.hrl").
 
 -export([start_link/3]).
