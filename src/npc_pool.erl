@@ -4,40 +4,38 @@
 %%
 
 -module(npc_pool).
--include_lib("amqp_client.hrl").
 
--export([start_link/3]).
+-export([start_link/2]).
 -export([terminate/2]).
 -export([init/1]).
--export([handle_info/2]).
+-export([handle_call/3]).
 
-start_link(ServerIp, ToClientEx, FromClientEx) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [ServerIp, ToClientEx, FromClientEx], []).
-
-init(Args) ->
-    [ServerIp, ToClientEx, FromClientEx] = Args,
-	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"move.#">>])}.
+-export([add/2]).
 
 %%
 %% APIs
 %%
 
-%% gen_server behaviour %%        
+add(ServerIp, Exchange) ->
+	Reply = gen_server:call(?MODULE, {add, ServerIp, Exchange}).
+
+
+%%
+%% Behaviors
+%%
+start_link(RiakIp, RiakPort) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [RiakIp, RiakPort], []).
+
+init(Args) ->
+    [RiakIp, RiakPort] = Args,
+	{ok, Hoge} = riak_pb_socket:start(RiakIp, RiakPort),
+	{ok, Hoge}.
+
 terminate(_Reason, State) ->
-	bidir_mq:shutdown_by_state(State),
 	ok.
 
-%% just after setup, this message will arrive.
-handle_info(#'basic.consume_ok'{}, State) ->
-	{noreply, State};
-
-%% while subscribing, message will be delivered by #amqp_msg
-handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
-	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	BinMsg = <<"info: Hello, this is move_srv!">>,
-	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = ToClientEx, routing_key = <<"move.id.99999">> },
-		#amqp_msg{payload = BinMsg}),
-	{noreply, State}.
+handle_call(add, From, State) ->
+	{ServerIp, ToClientEx, {Connection, ChTC}, IntervalMs} = State,
+	{reply, ok, State}.
 
 
