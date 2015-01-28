@@ -24,7 +24,7 @@ start_link() ->
 
 init([]) ->
 	ChildSpec = [
-	%%npc_pool(),
+	npc_pool(),
 	time_feeder(), 
 	chat_srv(),
 	move_srv()
