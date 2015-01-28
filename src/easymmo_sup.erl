@@ -24,6 +24,7 @@ start_link() ->
 
 init([]) ->
 	ChildSpec = [
+	%%npc_pool(),
 	time_feeder(), 
 	chat_srv(),
 	move_srv()
@@ -65,5 +66,17 @@ move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	Shutdown = brutal_kill,
 	Type = worker,
 	Modules = [move_srv],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+npc_pool() ->
+	npc_pool_one("192.168.56.11", 8087).
+
+npc_pool_one(RiakIp, RiakPort) ->
+	ID = npc_pool,
+	StartFunc = {npc_pool, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [npc_pool],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 

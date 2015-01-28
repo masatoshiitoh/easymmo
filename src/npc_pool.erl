@@ -13,6 +13,8 @@
 -export([add/2]).
 -export([lookup/1]).
 
+-compile(export_all).
+
 %%
 %% APIs
 %%
@@ -31,7 +33,7 @@ start_link(RiakIp, RiakPort) ->
 
 init(Args) ->
     [RiakIp, RiakPort] = Args,
-	{ok, Pid} = riak_pb_socket:start(RiakIp, RiakPort),
+	{ok, Pid} = riakc_pb_socket:start(RiakIp, RiakPort),
 	NewState = Pid,
 	{ok, NewState}.
 
