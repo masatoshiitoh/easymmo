@@ -31,7 +31,7 @@ init([]) ->
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
 time_feeder() ->
-	time_feeder_one("localhost", <<"time">> ).
+	time_feeder_one("192.168.56.21", <<"time">> ).
 
 time_feeder_one(IpAddr, ToClientEx) ->
 	ID = time_feeder,
@@ -44,7 +44,7 @@ time_feeder_one(IpAddr, ToClientEx) ->
 
 
 chat_srv() ->
-	chat_srv_one("localhost", <<"xout">>, <<"xin">> ).
+	chat_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
 
 chat_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = chat_srv,
@@ -56,7 +56,7 @@ chat_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 move_srv() ->
-	move_srv_one("localhost", <<"xout">>, <<"xin">> ).
+	move_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
 
 move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = move_srv,
