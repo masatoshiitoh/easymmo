@@ -4,7 +4,7 @@
 %% Easymmo map manager (all objects must be place to the map)
 
 -module(emmo_map).
--include_lib("amqp_client.hrl").
+% -include_lib("amqp_client.hrl").
 
 -export([start_link/2]).
 -export([terminate/2]).
@@ -12,6 +12,8 @@
 -export([handle_call/3]).
 
 -export([add/2]).
+-export([remove/1]).
+-export([move/2]).
 -export([lookup/1]).
 
 
@@ -21,6 +23,12 @@
 
 add(K, V) ->
 	Reply = gen_server:call(?MODULE, {add, K, V}).
+
+remove(K) ->
+	Reply = gen_server:call(?MODULE, {remove, K}).
+
+move(K, NewV) ->
+	Reply = gen_server:call(?MODULE, {move, K, NewV}).
 
 lookup(K) ->
 	Reply = gen_server:call(?MODULE, {lookup, K}).
@@ -46,6 +54,24 @@ handle_call({add, K, V}, From, State) ->
 	BinK = erlang:list_to_binary(K),
 	Obj1 = riakc_obj:new(MyBucket, BinK, V),
 	riakc_pb_socket:put(Pid, Obj1),
+	{reply, ok, State};
+
+handle_call({remove, K}, From, State) ->
+	Pid = State,
+	MyBucket = <<"map">>,
+	BinK = erlang:list_to_binary(K),
+	riakc_pb_socket:delete(Pid, MyBucket, BinK),
+	{reply, ok, State};
+
+handle_call({move, K, NewV}, From, State) ->
+	Pid = State,
+	MyBucket = <<"map">>,
+	BinK = erlang:list_to_binary(K),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinK),
+	UpdatedObj1 = riakc_obj:update_value(Fetched1, NewV),
+	{ok, NewestObj1} = riakc_pb_socket:put(Pid, UpdatedObj1, [return_body]),
+	%% check returned value
+	NewV = binary_to_term(riakc_obj:get_value(NewestObj1)),
 	{reply, ok, State};
 
 handle_call({lookup, K}, From, State) ->
