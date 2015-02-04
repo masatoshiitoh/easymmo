@@ -24,6 +24,7 @@ start_link() ->
 
 init([]) ->
 	ChildSpec = [
+	emmo_map(),
 	npc_pool(),
 	time_feeder(), 
 	chat_srv(),
@@ -79,4 +80,17 @@ npc_pool_one(RiakIp, RiakPort) ->
 	Type = worker,
 	Modules = [npc_pool],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+emmo_map() ->
+	emmo_map_one("192.168.56.11", 8087).
+
+emmo_map_one(RiakIp, RiakPort) ->
+	ID = emmo_map,
+	StartFunc = {emmo_map, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [emmo_map],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 
