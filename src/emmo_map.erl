@@ -15,7 +15,7 @@
 -export([remove/1]).
 -export([move/2]).
 -export([lookup/1]).
-
+-export([lookup_by_mapid/1]).
 
 %%
 %% APIs
@@ -32,6 +32,9 @@ move(K, NewV) ->
 
 lookup(K) ->
 	Reply = gen_server:call(?MODULE, {lookup, K}).
+
+lookup_by_mapid(K) ->
+	Reply = gen_server:call(?MODULE, {lookup_by, "mapid", K}).
 
 %%
 %% Behaviors
