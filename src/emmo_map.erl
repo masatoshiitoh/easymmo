@@ -15,26 +15,36 @@
 -export([remove/1]).
 -export([move/2]).
 -export([lookup/1]).
--export([lookup_by_mapid/1]).
+-export([lookup_by_map/1]).
+-export([test/0]).
+
+-record(location, {map_id, x, y}).
 
 %%
 %% APIs
 %%
+test() ->
+	L1 = #location{map_id = 1, x= 99,y= 88},
+	L2 = #location{map_id = 2, x=99, y=88},
+	add("i1", L1),
+	add("i2", L1),
+	add("i3", L2),
+	lookup_by_map(1).
 
-add(K, V) ->
-	Reply = gen_server:call(?MODULE, {add, K, V}).
+add(K, L) when is_record(L, location) ->
+	Reply = gen_server:call(?MODULE, {add, K, L}).
 
 remove(K) ->
 	Reply = gen_server:call(?MODULE, {remove, K}).
 
-move(K, NewV) ->
-	Reply = gen_server:call(?MODULE, {move, K, NewV}).
+move(K, NewL) when is_record(NewL, location) ->
+	Reply = gen_server:call(?MODULE, {move, K, NewL}).
 
 lookup(K) ->
 	Reply = gen_server:call(?MODULE, {lookup, K}).
 
-lookup_by_mapid(K) ->
-	Reply = gen_server:call(?MODULE, {lookup_by, "mapid", K}).
+lookup_by_map(K) ->
+	Reply = gen_server:call(?MODULE, {lookup_by, "map_id", K}).
 
 %%
 %% Behaviors
@@ -56,7 +66,15 @@ handle_call({add, K, V}, From, State) ->
 	MyBucket = <<"map">>,
 	BinK = erlang:list_to_binary(K),
 	Obj1 = riakc_obj:new(MyBucket, BinK, V),
-	riakc_pb_socket:put(Pid, Obj1),
+
+	MetaData = riakc_obj:get_update_metadata(Obj1),
+
+	MD1 = riakc_obj:set_secondary_index(MetaData, [{{binary_index, "map_id"},
+		[integer_to_list(Obj1#location.map_id)]}]),
+
+	Obj2 = riakc_obj:update_metadata(Obj1, MD1),
+
+	riakc_pb_socket:put(Pid, Obj2),
 	{reply, ok, State};
 
 handle_call({remove, K}, From, State) ->
@@ -83,5 +101,13 @@ handle_call({lookup, K}, From, State) ->
 	BinK = erlang:list_to_binary(K),
 	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinK),
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
-	{reply, {ok, Val1}, State}.
+	{reply, {ok, Val1}, State};
+
+handle_call({lookup_by, Attr, K}, From, State) ->
+	Pid = State,
+	MyBucket = <<"map">>,
+	BinK = erlang:list_to_binary(K),
+	V = riakc_pb_socket:get_index_eq(Pid, MyBucket,{binary_index, Attr}, BinK),
+	{reply, {ok, V}, State}.
+
 
