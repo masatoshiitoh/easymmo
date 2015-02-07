@@ -29,7 +29,8 @@ test() ->
 	add("i1", L1),
 	add("i2", L1),
 	add("i3", L2),
-	lookup_by_map(1).
+	io:format("map 1 : ~p~n", [lookup_by_map(1)]),
+	io:format("map 2 : ~p~n", [lookup_by_map(2)]).
 
 add(K, L) when is_record(L, loc) ->
 	Reply = gen_server:call(?MODULE, {add, K, L}).
