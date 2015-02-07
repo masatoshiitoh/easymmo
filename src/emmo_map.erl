@@ -18,26 +18,26 @@
 -export([lookup_by_map/1]).
 -export([test/0]).
 
--record(location, {map_id, x, y}).
+-record(loc, {map_id = 0, x = 0, y = 0}).
 
 %%
 %% APIs
 %%
 test() ->
-	L1 = #location{map_id = 1, x= 99,y= 88},
-	L2 = #location{map_id = 2, x=99, y=88},
+	L1 = #loc{map_id = 1, x= 99,y= 88},
+	L2 = #loc{map_id = 2, x=99, y=88},
 	add("i1", L1),
 	add("i2", L1),
 	add("i3", L2),
 	lookup_by_map(1).
 
-add(K, L) when is_record(L, location) ->
+add(K, L) when is_record(L, loc) ->
 	Reply = gen_server:call(?MODULE, {add, K, L}).
 
 remove(K) ->
 	Reply = gen_server:call(?MODULE, {remove, K}).
 
-move(K, NewL) when is_record(NewL, location) ->
+move(K, NewL) when is_record(NewL, loc) ->
 	Reply = gen_server:call(?MODULE, {move, K, NewL}).
 
 lookup(K) ->
@@ -66,11 +66,18 @@ handle_call({add, K, V}, From, State) ->
 	MyBucket = <<"map">>,
 	BinK = erlang:list_to_binary(K),
 	Obj1 = riakc_obj:new(MyBucket, BinK, V),
+	io:format("~p~n", [Obj1]),
 
 	MetaData = riakc_obj:get_update_metadata(Obj1),
+	io:format("~p~n", [MetaData]),
 
-	MD1 = riakc_obj:set_secondary_index(MetaData, [{{binary_index, "map_id"},
-		[integer_to_list(Obj1#location.map_id)]}]),
+	MD1 = riakc_obj:set_secondary_index(
+		MetaData,
+			[{
+				{integer_index, "map_id"},
+				[V#loc.map_id]
+			}]
+		),
 
 	Obj2 = riakc_obj:update_metadata(Obj1, MD1),
 
@@ -106,8 +113,7 @@ handle_call({lookup, K}, From, State) ->
 handle_call({lookup_by, Attr, K}, From, State) ->
 	Pid = State,
 	MyBucket = <<"map">>,
-	BinK = erlang:list_to_binary(K),
-	V = riakc_pb_socket:get_index_eq(Pid, MyBucket,{binary_index, Attr}, BinK),
+	V = riakc_pb_socket:get_index_eq(Pid, MyBucket,{integer_index, Attr}, K),
 	{reply, {ok, V}, State}.
 
 
