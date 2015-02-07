@@ -45,7 +45,7 @@ lookup(K) ->
 	Reply = gen_server:call(?MODULE, {lookup, K}).
 
 lookup_by_map(K) ->
-	Reply = gen_server:call(?MODULE, {lookup_by, "map_id", K}).
+	Reply = gen_server:call(?MODULE, {lookup_with_integer, "map_id", K}).
 
 %%
 %% Behaviors
@@ -111,7 +111,7 @@ handle_call({lookup, K}, From, State) ->
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 	{reply, {ok, Val1}, State};
 
-handle_call({lookup_by, Attr, K}, From, State) ->
+handle_call({lookup_with_integer, Attr, K}, From, State) ->
 	Pid = State,
 	MyBucket = <<"map">>,
 	V = riakc_pb_socket:get_index_eq(Pid, MyBucket,{integer_index, Attr}, K),
