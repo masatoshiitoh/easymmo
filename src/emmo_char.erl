@@ -17,15 +17,15 @@
 -export([lookup/1]).
 -export([test/0]).
 
--record(character, {hp = 0, mp = 0, speed = 0}).
+-record(character, {name = "", hp = 0, mp = 0, speed = 0}).
 
 %%
 %% APIs
 %%
 test() ->
-	C1 = #character{hp = 1, mp = 99, speed = 88},
-	C2 = #character{hp = 2, mp = 99, speed = 88},
-	C3 = #character{hp = 99, mp = 0, speed = 88},
+	C1 = #character{name = "ichiro", hp = 1, mp = 99, speed = 88},
+	C2 = #character{name = "jiro", hp = 2, mp = 99, speed = 88},
+	C3 = #character{name = "saburo", hp = 99, mp = 0, speed = 88},
 	add("i1", C1),
 	add("i2", C2),
 	add("i3", C3),
