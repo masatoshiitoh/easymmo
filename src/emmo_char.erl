@@ -23,13 +23,15 @@
 %% APIs
 %%
 test() ->
-	L1 = #character{hp = 1, mp= 99,speed= 88},
-	L2 = #character{hp = 2, mp=99, speed=88},
-	add("i1", L1),
-	add("i2", L1),
-	add("i3", L2),
+	C1 = #character{hp = 1, mp = 99, speed = 88},
+	C2 = #character{hp = 2, mp = 99, speed = 88},
+	C3 = #character{hp = 99, mp = 0, speed = 88},
+	add("i1", C1),
+	add("i2", C2),
+	add("i3", C3),
 	io:format("char 1 : ~p~n", [lookup("i1")]),
-	io:format("char 2 : ~p~n", [lookup("i2")]).
+	io:format("char 2 : ~p~n", [lookup("i2")]),
+	io:format("char 3 : ~p~n", [lookup("i3")]).
 
 add(K, L) when is_record(L, character) ->
 	Reply = gen_server:call(?MODULE, {add, K, L}).
