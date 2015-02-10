@@ -39,15 +39,18 @@ reset() ->
 %% Utilities
 %%
 
-get_counter_value(Pid) ->
+get_npc_counter_ref() ->
 	MyBucket = <<"counter">>,
 	BinK = erlang:list_to_binary("npc"),
-	riakc_pb_socket:get(Pid, MyBucket, BinK).
+	{MyBucket, BinK}.
+
+get_counter_value(Pid) ->
+	{B, K} = get_npc_counter_ref(),
+	riakc_pb_socket:get(Pid, B, K).
 
 make_next_value({error,notfound}) ->
-	MyBucket = <<"counter">>,
-	BinK = erlang:list_to_binary("npc"),
-	Obj = riakc_obj:new(MyBucket, BinK, 1),
+	{B, K} = get_npc_counter_ref(),
+	Obj = riakc_obj:new(B, K, 1),
 	{rc, 1, Obj};
 
 make_next_value({ok,Fetched}) ->
@@ -60,7 +63,6 @@ get_next_id(Pid) ->
 	{rc, Count, Obj} = make_next_value(get_counter_value(Pid)),
 	{ok, NewestObj1} = riakc_pb_socket:put(Pid, Obj, [return_body]),
 	Count.
-
 
 %%
 %% Behaviors
@@ -79,9 +81,8 @@ terminate(_Reason, State) ->
 
 handle_call({set_counter, V}, From, State) ->
 	{Pid, Npcs} = State,
-	MyBucket = <<"counter">>,
-	BinK = erlang:list_to_binary("npc"),
-	Obj = riakc_obj:new(MyBucket, BinK, V),
+	{B, K} = get_npc_counter_ref(),
+	Obj = riakc_obj:new(B, K, V),
 	{ok, NewestObj1} = riakc_pb_socket:put(Pid, Obj, [return_body]),
 	Val2 = binary_to_term(riakc_obj:get_value(NewestObj1)),
 	{reply, {ok, Val2}, State};
@@ -95,19 +96,19 @@ handle_call({new, Type}, From, State) ->
 	riakc_pb_socket:put(Pid, Obj1),
 	{reply, {ok, Id}, State};
 
-handle_call({add, K, V}, From, State) ->
+handle_call({add, Id, V}, From, State) ->
 	{Pid, Npcs} = State,
 	MyBucket = <<"npc">>,
-	BinK = erlang:list_to_binary(K),
-	Obj1 = riakc_obj:new(MyBucket, BinK, V),
+	BinId = erlang:term_to_binary(Id),
+	Obj1 = riakc_obj:new(MyBucket, BinId, V),
 	riakc_pb_socket:put(Pid, Obj1),
 	{reply, ok, State};
 
-handle_call({lookup, K}, From, State) ->
+handle_call({lookup, Id}, From, State) ->
 	{Pid, Npcs} = State,
 	MyBucket = <<"npc">>,
-	BinK = erlang:list_to_binary(K),
-	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinK),
+	BinId = erlang:term_to_binary(Id),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinId),
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 	{reply, {ok, Val1}, State}.
 
