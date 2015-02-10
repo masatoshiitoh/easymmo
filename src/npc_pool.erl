@@ -10,6 +10,8 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([new/0]).
+-export([new/1]).
 -export([add/2]).
 -export([lookup/1]).
 
@@ -18,6 +20,12 @@
 %%
 %% APIs
 %%
+
+new() ->
+	Reply = gen_server:call(?MODULE, {new, 0}).
+
+new(Type) ->
+	Reply = gen_server:call(?MODULE, {new, Type}).
 
 add(K, V) ->
 	Reply = gen_server:call(?MODULE, {add, K, V}).
@@ -34,14 +42,23 @@ start_link(RiakIp, RiakPort) ->
 init(Args) ->
     [RiakIp, RiakPort] = Args,
 	{ok, Pid} = riakc_pb_socket:start(RiakIp, RiakPort),
-	NewState = Pid,
+	NewState = {Pid, []},
 	{ok, NewState}.
 
 terminate(_Reason, State) ->
 	ok.
 
+handle_call({new, Type}, From, State) ->
+	{Pid, Npcs} = State,
+	MyBucket = <<"test">>,
+	BinK = erlang:list_to_binary(K),
+	Obj1 = riakc_obj:new(MyBucket, BinK, V),
+	riakc_pb_socket:put(Pid, Obj1),
+	{reply, ok, State};
+
+
 handle_call({add, K, V}, From, State) ->
-	Pid = State,
+	{Pid, Npcs} = State,
 	MyBucket = <<"test">>,
 	BinK = erlang:list_to_binary(K),
 	Obj1 = riakc_obj:new(MyBucket, BinK, V),
@@ -49,7 +66,7 @@ handle_call({add, K, V}, From, State) ->
 	{reply, ok, State};
 
 handle_call({lookup, K}, From, State) ->
-	Pid = State,
+	{Pid, Npcs} = State,
 	MyBucket = <<"test">>,
 	BinK = erlang:list_to_binary(K),
 	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinK),
