@@ -24,6 +24,7 @@ start_link() ->
 
 init([]) ->
 	ChildSpec = [
+	rutil(),
 	emmo_map(),
 	emmo_char(),
 	npc_pool(),
@@ -106,6 +107,20 @@ emmo_char_one(RiakIp, RiakPort) ->
 	Type = worker,
 	Modules = [emmo_char],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+
+rutil() ->
+	rutil_one("192.168.56.11", 8087).
+
+rutil_one(RiakIp, RiakPort) ->
+	ID = rutil,
+	StartFunc = {rutil, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [rutil],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 
 
 
