@@ -24,6 +24,10 @@ start_link() ->
 
 init([]) ->
 	ChildSpec = [
+	rutil(),
+	emmo_map(),
+	emmo_char(),
+	npc_pool(),
 	time_feeder(), 
 	chat_srv(),
 	move_srv()
@@ -31,7 +35,7 @@ init([]) ->
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
 time_feeder() ->
-	time_feeder_one("localhost", <<"time">> ).
+	time_feeder_one("192.168.56.21", <<"time">> ).
 
 time_feeder_one(IpAddr, ToClientEx) ->
 	ID = time_feeder,
@@ -44,7 +48,7 @@ time_feeder_one(IpAddr, ToClientEx) ->
 
 
 chat_srv() ->
-	chat_srv_one("localhost", <<"xout">>, <<"xin">> ).
+	chat_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
 
 chat_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = chat_srv,
@@ -56,7 +60,7 @@ chat_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 move_srv() ->
-	move_srv_one("localhost", <<"xout">>, <<"xin">> ).
+	move_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
 
 move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = move_srv,
@@ -66,4 +70,57 @@ move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	Type = worker,
 	Modules = [move_srv],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+npc_pool() ->
+	npc_pool_one("192.168.56.11", 8087).
+
+npc_pool_one(RiakIp, RiakPort) ->
+	ID = npc_pool,
+	StartFunc = {npc_pool, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [npc_pool],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+emmo_map() ->
+	emmo_map_one("192.168.56.11", 8087).
+
+emmo_map_one(RiakIp, RiakPort) ->
+	ID = emmo_map,
+	StartFunc = {emmo_map, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [emmo_map],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+
+emmo_char() ->
+	emmo_char_one("192.168.56.11", 8087).
+
+emmo_char_one(RiakIp, RiakPort) ->
+	ID = emmo_char,
+	StartFunc = {emmo_char, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [emmo_char],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+
+rutil() ->
+	rutil_one("192.168.56.11", 8087).
+
+rutil_one(RiakIp, RiakPort) ->
+	ID = rutil,
+	StartFunc = {rutil, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [rutil],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+
+
 

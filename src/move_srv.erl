@@ -11,6 +11,18 @@
 -export([init/1]).
 -export([handle_info/2]).
 
+%%
+%% APIs
+%%
+
+move_abs(Id, To) ->0.
+
+move_rel(Id, Delta) ->0.
+	
+
+%%
+%% Behaviors
+%%
 start_link(ServerIp, ToClientEx, FromClientEx) ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [ServerIp, ToClientEx, FromClientEx], []).
 
@@ -18,11 +30,6 @@ init(Args) ->
     [ServerIp, ToClientEx, FromClientEx] = Args,
 	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"move.#">>])}.
 
-%%
-%% APIs
-%%
-
-%% gen_server behaviour %%        
 terminate(_Reason, State) ->
 	bidir_mq:shutdown_by_state(State),
 	ok.
