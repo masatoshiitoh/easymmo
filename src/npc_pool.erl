@@ -96,7 +96,7 @@ handle_call({remove, Id}, From, State) ->
 handle_call({run, IntervalMSec}, From, State) ->
 	{Pid, Npcs} = State,
 	MyBucket = <<"npc">>,
-	Val1 = lists:foreach(
+	Val1 = lists:map(
 		fun(X) ->
 			BinId = erlang:term_to_binary(1),
 			{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinId),
