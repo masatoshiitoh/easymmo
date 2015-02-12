@@ -33,6 +33,9 @@ add(K, V) ->
 lookup(K) ->
 	Reply = gen_server:call(?MODULE, {lookup, K}).
 
+remove(K) ->
+	Reply = gen_server:call(?MODULE, {remove, K}).
+
 run() ->
 	Reply = gen_server:call(?MODULE, {run, 1000}).
 
@@ -61,7 +64,8 @@ handle_call({new, Type}, From, State) ->
 	BinK = erlang:term_to_binary(Id),
 	Obj1 = riakc_obj:new(MyBucket, BinK, "hoge"),
 	riakc_pb_socket:put(Pid, Obj1),
-	{reply, {ok, Id}, State};
+	NewState = {Pid, [Id | Npcs]},
+	{reply, {ok, Id}, NewState};
 
 handle_call({add, Id, V}, From, State) ->
 	{Pid, Npcs} = State,
@@ -79,12 +83,22 @@ handle_call({lookup, Id}, From, State) ->
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 	{reply, {ok, Val1}, State};
 
+handle_call({remove, Id}, From, State) ->
+	{Pid, Npcs} = State,
+	MyBucket = <<"npc">>,
+	NewState = {Pid, lists:delete(Id , Npcs)},
+	{reply, {ok, Id}, NewState};
+
 handle_call({run, IntervalMSec}, From, State) ->
 	{Pid, Npcs} = State,
 	MyBucket = <<"npc">>,
-	BinId = erlang:term_to_binary(1),
-	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinId),
-	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
+	Val1 = lists:foreach(
+		fun(X) ->
+			BinId = erlang:term_to_binary(1),
+			{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinId),
+			Val1 = binary_to_term(riakc_obj:get_value(Fetched1))
+		end,
+		Npcs),
 	{reply, {ok, Val1}, State}.
 
 
