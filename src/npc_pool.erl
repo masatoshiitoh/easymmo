@@ -10,10 +10,11 @@
 -export([init/1]).
 -export([handle_call/3]).
 
--export([new/0]).
--export([new/1]).
--export([add/2]).
+-export([add/0]).
+-export([add/1]).
+-export([is_on/1]).
 -export([lookup/1]).
+-export([remove/1]).
 -export([run/0]).
 -export([run/1]).
 
@@ -21,20 +22,20 @@
 %% APIs
 %%
 
-new() ->
-	Reply = gen_server:call(?MODULE, {new, 0}).
+add() ->
+	Reply = gen_server:call(?MODULE, {add, auto_increment}).
 
-new(Type) ->
-	Reply = gen_server:call(?MODULE, {new, Type}).
+add(Id) ->
+	Reply = gen_server:call(?MODULE, {add, Id}).
 
-add(K, V) ->
-	Reply = gen_server:call(?MODULE, {add, K, V}).
+is_on(Id) ->
+	Reply = gen_server:call(?MODULE, {is_on, Id}).
 
-lookup(K) ->
-	Reply = gen_server:call(?MODULE, {lookup, K}).
+lookup(Id) ->
+	Reply = gen_server:call(?MODULE, {lookup, Id}).
 
-remove(K) ->
-	Reply = gen_server:call(?MODULE, {remove, K}).
+remove(Id) ->
+	Reply = gen_server:call(?MODULE, {remove, Id}).
 
 run() ->
 	Reply = gen_server:call(?MODULE, {run, 1000}).
@@ -57,23 +58,27 @@ init(Args) ->
 terminate(_Reason, State) ->
 	ok.
 
-handle_call({new, Type}, From, State) ->
+handle_call({add, auto_increment}, From, State) ->
 	{Pid, Npcs} = State,
 	MyBucket = <<"npc">>,
 	Id = rutil:auto_increment("npc"),
-	BinK = erlang:term_to_binary(Id),
-	Obj1 = riakc_obj:new(MyBucket, BinK, "hoge"),
+	BinId = erlang:term_to_binary(Id),
+	Obj1 = riakc_obj:new(MyBucket, BinId, "default"),
 	riakc_pb_socket:put(Pid, Obj1),
 	NewState = {Pid, [Id | Npcs]},
 	{reply, {ok, Id}, NewState};
 
-handle_call({add, Id, V}, From, State) ->
+handle_call({add, Id}, From, State) ->
 	{Pid, Npcs} = State,
 	MyBucket = <<"npc">>,
 	BinId = erlang:term_to_binary(Id),
-	Obj1 = riakc_obj:new(MyBucket, BinId, V),
-	riakc_pb_socket:put(Pid, Obj1),
-	{reply, ok, State};
+	{ok, Fetched} = riakc_pb_socket:get(Pid, MyBucket, BinId),	%% check if key existing "BinId"
+	NewState = {Pid, [Id | Npcs]},
+	{reply, ok, NewState};
+
+handle_call({is_on, Id}, From, State) ->
+	{Pid, Npcs} = State,
+	{reply, {ok, lists:member(Id , Npcs)}, State};
 
 handle_call({lookup, Id}, From, State) ->
 	{Pid, Npcs} = State,
@@ -85,7 +90,6 @@ handle_call({lookup, Id}, From, State) ->
 
 handle_call({remove, Id}, From, State) ->
 	{Pid, Npcs} = State,
-	MyBucket = <<"npc">>,
 	NewState = {Pid, lists:delete(Id , Npcs)},
 	{reply, {ok, Id}, NewState};
 
