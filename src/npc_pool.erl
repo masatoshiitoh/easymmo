@@ -14,6 +14,8 @@
 -export([new/1]).
 -export([add/2]).
 -export([lookup/1]).
+-export([run/0]).
+-export([run/1]).
 
 %%
 %% APIs
@@ -30,6 +32,12 @@ add(K, V) ->
 
 lookup(K) ->
 	Reply = gen_server:call(?MODULE, {lookup, K}).
+
+run() ->
+	Reply = gen_server:call(?MODULE, {run, 1000}).
+
+run(IntervalMSec) ->
+	Reply = gen_server:call(?MODULE, {run, IntervalMSec}).
 
 %%
 %% Behaviors
@@ -67,6 +75,14 @@ handle_call({lookup, Id}, From, State) ->
 	{Pid, Npcs} = State,
 	MyBucket = <<"npc">>,
 	BinId = erlang:term_to_binary(Id),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinId),
+	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
+	{reply, {ok, Val1}, State};
+
+handle_call({run, IntervalMSec}, From, State) ->
+	{Pid, Npcs} = State,
+	MyBucket = <<"npc">>,
+	BinId = erlang:term_to_binary(1),
 	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinId),
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 	{reply, {ok, Val1}, State}.
