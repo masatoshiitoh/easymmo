@@ -54,7 +54,7 @@ run(IntervalMSec) ->
 %%
 
 get_new_npc() ->
-	{ok, V} = emmo_character:new("npc"),
+	{ok, V} = emmo_char:new("npc"),
 	V.
 
 %%
@@ -77,7 +77,7 @@ handle_call({add, auto_increment}, From, State) ->
 	Id = rutil:auto_increment("npc"),
 	BinId = erlang:term_to_binary(Id),
 	NewNpc = get_new_npc(),
-	Obj1 = riakc_obj:new(MyBucket, BinId, NewNpc),
+	Obj1 = riakc_obj:new(?MyBucket, BinId, NewNpc),
 	riakc_pb_socket:put(Pid, Obj1),
 	NewState = {Pid, [Id | Npcs]},
 	{reply, {ok, Id}, NewState};
@@ -85,15 +85,14 @@ handle_call({add, auto_increment}, From, State) ->
 handle_call({remove, Id}, From, State) ->
 	{Pid, Npcs} = State,
 	NewState = {Pid, lists:delete(Id , Npcs)},
-	MyBucket = <<"npc">>,
 	BinId = erlang:term_to_binary(Id),
-	riakc_pb_socket:delete(Pid, MyBucket, BinId),
+	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
 	{reply, {ok, Id}, NewState};
 
 handle_call({online, Id}, From, State) ->
 	{Pid, Npcs} = State,
 	BinId = erlang:term_to_binary(Id),
-	{ok, Fetched} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),	%% check if key existing "BinId"
+	{ok, _} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),	%% check if key existing "BinId"
 	NewState = {Pid, [Id | Npcs]},
 	{reply, ok, NewState};
 
@@ -103,7 +102,7 @@ handle_call({offline, Id}, From, State) ->
 	{reply, {ok, Id}, NewState};
 
 handle_call({is_on, Id}, From, State) ->
-	{Pid, Npcs} = State,
+	{_, Npcs} = State,
 	{reply, {ok, lists:member(Id , Npcs)}, State};
 
 handle_call({lookup, Id}, From, State) ->
@@ -117,7 +116,7 @@ handle_call({run, IntervalMSec}, From, State) ->
 	{Pid, Npcs} = State,
 	Val1 = lists:map(
 		fun(X) ->
-			BinId = erlang:term_to_binary(1),
+			BinId = erlang:term_to_binary(X),
 			{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
 			Val1 = binary_to_term(riakc_obj:get_value(Fetched1))
 		end,

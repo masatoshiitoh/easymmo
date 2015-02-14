@@ -11,6 +11,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([new/1]).
 -export([add/2]).
 -export([remove/1]).
 -export([move/2]).
@@ -32,6 +33,10 @@ test() ->
 	io:format("char 1 : ~p~n", [lookup("i1")]),
 	io:format("char 2 : ~p~n", [lookup("i2")]),
 	io:format("char 3 : ~p~n", [lookup("i3")]).
+
+new(K) ->
+	L = #character{},
+	Reply = gen_server:call(?MODULE, {add, K, L}).
 
 add(K, L) when is_record(L, character) ->
 	Reply = gen_server:call(?MODULE, {add, K, L}).
@@ -66,7 +71,7 @@ handle_call({add, K, V}, From, State) ->
 	BinK = erlang:list_to_binary(K),
 	Obj1 = riakc_obj:new(MyBucket, BinK, V),
 	riakc_pb_socket:put(Pid, Obj1),
-	{reply, ok, State};
+	{reply, {ok, V}, State};
 
 handle_call({remove, K}, From, State) ->
 	Pid = State,
