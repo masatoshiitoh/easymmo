@@ -28,20 +28,20 @@
 add() ->
 	Reply = gen_server:call(?MODULE, {add, auto_increment}).
 
-remove(Id) ->
-	Reply = gen_server:call(?MODULE, {remove, Id}).
+remove(NamedId) ->
+	Reply = gen_server:call(?MODULE, {remove, NamedId}).
 
-online(Id) ->
-	Reply = gen_server:call(?MODULE, {online, Id}).
+online(NamedId) ->
+	Reply = gen_server:call(?MODULE, {online, NamedId}).
 
-offline(Id) ->
-	Reply = gen_server:call(?MODULE, {offline, Id}).
+offline(NamedId) ->
+	Reply = gen_server:call(?MODULE, {offline, NamedId}).
 
-is_on(Id) ->
-	Reply = gen_server:call(?MODULE, {is_on, Id}).
+is_on(NamedId) ->
+	Reply = gen_server:call(?MODULE, {is_on, NamedId}).
 
-lookup(Id) ->
-	Reply = gen_server:call(?MODULE, {lookup, Id}).
+lookup(NamedId) ->
+	Reply = gen_server:call(?MODULE, {lookup, NamedId}).
 
 run() ->
 	Reply = gen_server:call(?MODULE, {run, 1000}).
@@ -74,40 +74,40 @@ terminate(_Reason, State) ->
 
 handle_call({add, auto_increment}, From, State) ->
 	{Pid, Npcs} = State,
-	Id = rutil:auto_increment("npc"),
-	BinId = erlang:term_to_binary(Id),
+	NamedId = rutil:named_id("npc", rutil:auto_increment("npc")),
+	BinId = erlang:list_to_binary(NamedId),
 	NewNpc = get_new_npc(),
 	Obj1 = riakc_obj:new(?MyBucket, BinId, NewNpc),
 	riakc_pb_socket:put(Pid, Obj1),
-	NewState = {Pid, [Id | Npcs]},
-	{reply, {ok, Id}, NewState};
+	NewState = {Pid, [NamedId | Npcs]},
+	{reply, {ok, NamedId}, NewState};
 
-handle_call({remove, Id}, From, State) ->
+handle_call({remove, NamedId}, From, State) ->
 	{Pid, Npcs} = State,
-	NewState = {Pid, lists:delete(Id , Npcs)},
-	BinId = erlang:term_to_binary(Id),
+	NewState = {Pid, lists:delete(NamedId , Npcs)},
+	BinId = erlang:list_to_binary(NamedId),
 	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
-	{reply, {ok, Id}, NewState};
+	{reply, {ok, NamedId}, NewState};
 
-handle_call({online, Id}, From, State) ->
+handle_call({online, NamedId}, From, State) ->
 	{Pid, Npcs} = State,
-	BinId = erlang:term_to_binary(Id),
+	BinId = erlang:list_to_binary(NamedId),
 	{ok, _} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),	%% check if key existing "BinId"
-	NewState = {Pid, [Id | Npcs]},
+	NewState = {Pid, [NamedId | Npcs]},
 	{reply, ok, NewState};
 
-handle_call({offline, Id}, From, State) ->
+handle_call({offline, NamedId}, From, State) ->
 	{Pid, Npcs} = State,
-	NewState = {Pid, lists:delete(Id , Npcs)},
-	{reply, {ok, Id}, NewState};
+	NewState = {Pid, lists:delete(NamedId , Npcs)},
+	{reply, {ok, NamedId}, NewState};
 
-handle_call({is_on, Id}, From, State) ->
+handle_call({is_on, NamedId}, From, State) ->
 	{_, Npcs} = State,
-	{reply, {ok, lists:member(Id , Npcs)}, State};
+	{reply, {ok, lists:member(NamedId , Npcs)}, State};
 
-handle_call({lookup, Id}, From, State) ->
+handle_call({lookup, NamedId}, From, State) ->
 	{Pid, Npcs} = State,
-	BinId = erlang:term_to_binary(Id),
+	BinId = erlang:list_to_binary(NamedId),
 	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 	{reply, {ok, Val1}, State};
@@ -116,7 +116,7 @@ handle_call({run, IntervalMSec}, From, State) ->
 	{Pid, Npcs} = State,
 	Val1 = lists:map(
 		fun(X) ->
-			BinId = erlang:term_to_binary(X),
+			BinId = erlang:list_to_binary(X),
 			{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
 			Val1 = binary_to_term(riakc_obj:get_value(Fetched1))
 		end,

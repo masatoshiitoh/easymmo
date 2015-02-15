@@ -10,6 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([named_id/2]).
 -export([auto_increment/0]).
 -export([auto_increment/1]).
 -export([ai/0]).
@@ -22,6 +23,15 @@
 %% APIs
 %%
 
+%
+% named_id generates id like "npc921".
+%
+named_id(Name, Id) when is_list(Name), is_integer(Id) ->
+	lists:append(Name, integer_to_list(Id)).
+
+%
+% auto increment functions.
+%
 ai(Name) -> auto_increment(Name).  
 ai() -> auto_increment().
 
