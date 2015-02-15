@@ -19,7 +19,7 @@
 -export([run/0]).
 -export([run/1]).
 
--define(MyBucket, <<"npc">>).
+-define(MyBucket, <<"characters">>).
 
 %%
 %% APIs
