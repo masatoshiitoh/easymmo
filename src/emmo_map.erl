@@ -14,7 +14,9 @@
 -export([add/2]).
 -export([remove/1]).
 -export([move/2]).
+-export([move/2]).
 -export([lookup/1]).
+-export([npc_new_location/0]).
 -export([lookup_by_map/1]).
 -export([get_near_objects/1]).
 -export([get_near_objects/2]).
@@ -50,6 +52,9 @@ move(Id, NewL) when is_record(NewL, loc) ->
 
 lookup(Id) ->
 	Reply = gen_server:call(?MODULE, {lookup, Id}).
+
+npc_new_location() ->
+	Reply = gen_server:call(?MODULE, {new_location, "npc"}).
 
 lookup_by_map(MapId) when is_integer(MapId) ->
 	Reply = gen_server:call(?MODULE, {lookup_with_integer, "map_id", MapId}).
@@ -129,6 +134,11 @@ handle_call({lookup_with_integer, Attr, K}, From, State) ->
 	Pid = State,
 	V = impl_lookup_with_integer(Pid, Attr, K),
 	{reply, {ok, V}, State};
+
+handle_call({new_location, "npc"}, From, State) ->
+	Pid = State,
+	L1 = #loc{map_id = 1, x=99 + random:uniform(10), y=88 + random:uniform(10)},
+	{reply, {ok, L1}, State};
 
 handle_call({get_near_objects, Id, Distance}, From, State) ->
 	Pid = State,

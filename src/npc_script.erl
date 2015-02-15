@@ -47,12 +47,15 @@ handle_call({apply, NamedId}, From, State) ->
 
 	% Get current NPC data.
 	{ok, CurrentNpcData} = npc_pool:lookup(NamedId),
+	io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
 
 	% Get sensor data ( = now, this is get from map )
 	NearObjects = emmo_map:get_near_objects(NamedId),
+	io:format("NearObjects : ~p~n", [NearObjects]),
 
 	% Select next action
 	NextAction = choose_action(CurrentNpcData, NearObjects),
+	io:format("NextAction : ~p~n", [NextAction]),
 
 	% Update values by next move
 

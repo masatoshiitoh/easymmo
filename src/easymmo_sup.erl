@@ -28,6 +28,7 @@ init([]) ->
 	emmo_map(),
 	emmo_char(),
 	npc_pool(),
+	npc_script(),
 	time_feeder(), 
 	chat_srv(),
 	move_srv()
@@ -83,6 +84,18 @@ npc_pool_one(RiakIp, RiakPort) ->
 	Modules = [npc_pool],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
+npc_script() ->
+	npc_script_one("192.168.56.11", 8087).
+
+npc_script_one(RiakIp, RiakPort) ->
+	ID = npc_script,
+	StartFunc = {npc_script, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [npc_script],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 emmo_map() ->
 	emmo_map_one("192.168.56.11", 8087).
 
@@ -107,7 +120,6 @@ emmo_char_one(RiakIp, RiakPort) ->
 	Type = worker,
 	Modules = [emmo_char],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
-
 
 rutil() ->
 	rutil_one("192.168.56.11", 8087).

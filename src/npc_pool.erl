@@ -57,6 +57,10 @@ get_new_npc() ->
 	{ok, V} = emmo_char:new("npc"),
 	V.
 
+get_new_location() ->
+	{ok, V} = emmo_map:npc_new_location(),
+	V.
+
 %%
 %% Behaviors
 %%
@@ -80,6 +84,10 @@ handle_call({add, auto_increment}, From, State) ->
 	Obj1 = riakc_obj:new(?MyBucket, BinId, NewNpc),
 	riakc_pb_socket:put(Pid, Obj1),
 	NewState = {Pid, [NamedId | Npcs]},
+
+	NewLoc = get_new_location(), 
+	emmo_map:add(NamedId, NewLoc),
+
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({remove, NamedId}, From, State) ->
