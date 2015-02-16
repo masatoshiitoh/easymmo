@@ -27,6 +27,7 @@ init([]) ->
 	rutil(),
 	emmo_map(),
 	emmo_char(),
+	notifier(),
 	npc_pool(),
 	npc_script(),
 	time_feeder(), 
@@ -70,6 +71,18 @@ move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	Shutdown = brutal_kill,
 	Type = worker,
 	Modules = [move_srv],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+notifier() ->
+	notifier_one().
+
+notifier_one() ->
+	ID = notifier,
+	StartFunc = {notifier, start_link, []},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [notifier],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 npc_pool() ->
