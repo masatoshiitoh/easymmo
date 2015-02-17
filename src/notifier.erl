@@ -4,12 +4,10 @@
 %%
 
 -module(notifier).
--include_lib("amqp_client.hrl").
 
 -export([start_link/0]).
 -export([terminate/2]).
 -export([init/1]).
--export([handle_info/2]).
 -export([handle_call/3]).
 
 -export([add/2]).
@@ -33,19 +31,9 @@ init(_Args) ->
 terminate(_Reason, State) ->
 	ok.
 
-%% just after setup, this message will arrive.
-handle_info(#'basic.consume_ok'{}, State) ->
-	{noreply, State};
-
-%% while subscribing, message will be delivered by #amqp_msg
-handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
-	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	Message = <<"info: Hello, this is notifier! ">> ,
-	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = ToClientEx, routing_key = <<"id.99999">> },
-		#amqp_msg{payload = Message}),
-	{noreply, State}.
-
 handle_call({add, DeltaMs, {mfa, M, F, A}}, From, State) ->
+	spawn(fun() ->
+		receive after DeltaMs -> apply(M,F,A) end
+		end),
 	{reply, ok, State}.
 
