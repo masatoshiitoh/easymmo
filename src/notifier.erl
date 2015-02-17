@@ -15,8 +15,7 @@
 %%
 %% APIs
 %%
-add(DeltaMs, MFA) ->
-	{mfa, M, F, A} = MFA,
+add(DeltaMs, {mfa, M, F, A}) ->
 	Reply = gen_server:call(?MODULE, {add, DeltaMs, {mfa, M, F, A}}).
 
 %%
