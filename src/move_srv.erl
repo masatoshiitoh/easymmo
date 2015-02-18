@@ -18,7 +18,7 @@
 move_abs(Id, To) ->0.
 
 move_rel(Id, Delta) ->0.
-	
+
 
 %%
 %% Behaviors

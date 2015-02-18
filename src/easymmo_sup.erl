@@ -25,6 +25,7 @@ start_link() ->
 init([]) ->
 	ChildSpec = [
 	rutil(),
+	path_finder(),
 	emmo_map(),
 	emmo_char(),
 	notifier(),
@@ -146,6 +147,19 @@ rutil_one(RiakIp, RiakPort) ->
 	Modules = [rutil],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
+
+
+path_finder() ->
+	path_finder_one().
+
+path_finder_one() ->
+	ID = path_finder,
+	StartFunc = {path_finder, start_link, []},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [path_finder],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 
 
