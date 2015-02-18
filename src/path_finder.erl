@@ -10,6 +10,10 @@
 -export([start_link/0, stop/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
+-export([test/0]).
+
+test() ->
+	lookup_path({map_id, "hibari", 1}, {pos, 1,1 }, {pos, 8,8}).
 
 start_link() ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
