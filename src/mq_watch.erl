@@ -16,7 +16,8 @@ start_link(ServerIp, ToClientEx, FromClientEx) ->
 
 init(Args) ->
 	[ServerIp, ToClientEx, FromClientEx] = Args,
-	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>, <<"move.#">>])}.
+	%% {ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>, <<"move.#">>])}.
+	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"#">>])}.
 
 %%
 %% APIs
