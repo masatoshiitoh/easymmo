@@ -24,6 +24,7 @@ start_link() ->
 
 init([]) ->
 	ChildSpec = [
+	mq_watch(),
 	rutil(),
 	path_finder(),
 	emmo_map(),
@@ -161,5 +162,16 @@ path_finder_one() ->
 	Modules = [path_finder],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
+mq_watch() ->
+	mq_watch_one("192.168.56.21", <<"xout">>, <<"xin">> ).
+
+mq_watch_one(ServerIp, ToClientEx, FromClientEx) ->
+	ID = mq_watch,
+	StartFunc = {mq_watch, start_link, [ServerIp, ToClientEx, FromClientEx]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [mq_watch],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 

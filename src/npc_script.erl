@@ -10,7 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
--export([apply/1]).
+-export([step/1]).
 
 -define(MyBucket, <<"characters">>).
 
@@ -18,8 +18,8 @@
 %% APIs
 %%
 
-apply(NamedId) ->
-	Reply = gen_server:call(?MODULE, {apply, NamedId}).
+step(NamedId) ->
+	Reply = gen_server:call(?MODULE, {step, NamedId}).
 
 %%
 %% Utlities
@@ -42,7 +42,7 @@ init(Args) ->
 terminate(_Reason, State) ->
 	ok.
 
-handle_call({apply, NamedId}, From, State) ->
+handle_call({step, NamedId}, From, State) ->
 	{Pid, Npcs} = State,
 
 	% Get current NPC data.
