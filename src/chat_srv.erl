@@ -10,19 +10,25 @@
 -export([terminate/2]).
 -export([init/1]).
 -export([handle_info/2]).
+-export([handle_call/3]).
+-export([broadcast/2]).
 
+%%
+%% APIs
+%%
+broadcast(Id, Payload) ->
+	Reply = gen_server:call(?MODULE, {broadcast, Id, Payload}).
+
+%%
+%% Behaviors
+%%
 start_link(ServerIp, ToClientEx, FromClientEx) ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [ServerIp, ToClientEx, FromClientEx], []).
 
 init(Args) ->
 	[ServerIp, ToClientEx, FromClientEx] = Args,
-	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>, <<"move.#">>])}.
+	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>])}.
 
-%%
-%% APIs
-%%
-
-%% gen_server behaviour %%        
 terminate(_Reason, State) ->
 	bidir_mq:shutdown_by_state(State),
 	ok.
@@ -39,4 +45,12 @@ handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = B
 		#'basic.publish'{exchange = ToClientEx, routing_key = <<"id.99999">> },
 		#amqp_msg{payload = Message}),
 	{noreply, State}.
+
+handle_call({broadcast, Id, Payload}, From, State) ->
+	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
+	BinMsg = list_to_binary(Payload) ,
+	amqp_channel:cast(ChTC,
+		#'basic.publish'{exchange = FromClientEx, routing_key = <<"id.99999">> },
+		#amqp_msg{payload = BinMsg}),
+	{reply, ok, State}.
 
