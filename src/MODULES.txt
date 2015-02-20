@@ -1,0 +1,16 @@
+bidir_mq.erl	RabbitMQで二重pub/sub構成をする
+chat_srv.erl	FromClientで受けて、 チャットデータを必要な相手（近隣？）に送り込む。
+easymmo.app.src
+easymmo.erl
+easymmo_app.erl
+easymmo_sup.erl	本システムのスーパバイザ。
+emmo_char.erl	RiakでIDによるキャラクタデータの抽出をおこなう。
+emmo_map.erl	Riakで位置情報によるキャラクタ抽出をおこなう。
+move_srv.erl	FromClientから受けて、移動情報を通知する必要がある相手（たぶん同一マップ）に送り込む。
+mq_watch.erl	MQのToClientに送り込まれるものをio:formatで出力する。デバッグツール。
+notifier.erl	あとで関数を実行するためのサービス。MFAで指定。
+npc_pool.erl	NPC一覧を保持・管理する。
+npc_script.erl	個々のNPCが次のステップをどうするか処理する。周辺を見て、判断した「次のステップ」を返す。
+path_finder.erl	移動経路をA*で抽出する。
+rutil.erl		Riakとあわせて使いたいユーティリティ。auto incrementとか。
+time_feeder.erl	MQで、固定名称のExchangeに現時刻のテキスト表現を1秒に1回送り込む。動作確認系ツール
