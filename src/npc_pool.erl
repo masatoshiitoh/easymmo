@@ -126,9 +126,12 @@ handle_call({run, IntervalMSec}, From, State) ->
 		fun(X) ->
 			BinId = erlang:list_to_binary(X),
 			{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
-			Val1 = binary_to_term(riakc_obj:get_value(Fetched1))
+			Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
+
+			npc_script:step(Val1)
 		end,
 		Npcs),
+	notifier:add(IntervalMSec, {mfa, npc_pool, run, [IntervalMSec]}),
 	{reply, {ok, Val1}, State}.
 
 
