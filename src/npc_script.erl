@@ -10,7 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
--export([step/1]).
+-export([step/3]).
 
 -define(MyBucket, <<"characters">>).
 
@@ -18,8 +18,8 @@
 %% APIs
 %%
 
-step(NamedId) ->
-	Reply = gen_server:call(?MODULE, {step, NamedId}).
+step(NamedId , CurrentNpcData, NearObjects) ->
+	Reply = gen_server:call(?MODULE, {step, NamedId , CurrentNpcData, NearObjects}).
 
 %%
 %% Utlities
@@ -42,16 +42,8 @@ init(Args) ->
 terminate(_Reason, State) ->
 	ok.
 
-handle_call({step, NamedId}, From, State) ->
+handle_call({step, NamedId, CurrentNpcData, NearObjects}, From, State) ->
 	{Pid, Npcs} = State,
-
-	% Get current NPC data.
-	{ok, CurrentNpcData} = npc_pool:lookup(NamedId),
-	io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
-
-	% Get sensor data ( = now, this is get from map )
-	NearObjects = emmo_map:get_near_objects(NamedId),
-	io:format("NearObjects : ~p~n", [NearObjects]),
 
 	% Select next action
 	NextAction = choose_action(CurrentNpcData, NearObjects),

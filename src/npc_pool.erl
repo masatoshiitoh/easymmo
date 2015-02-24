@@ -61,6 +61,12 @@ get_new_location() ->
 	{ok, V} = emmo_map:npc_new_location(),
 	V.
 
+lookup_impl(Pid, NamedId) ->
+	BinId = erlang:list_to_binary(NamedId),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
+	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)).
+
+
 %%
 %% Behaviors
 %%
@@ -115,9 +121,7 @@ handle_call({is_on, NamedId}, From, State) ->
 
 handle_call({lookup, NamedId}, From, State) ->
 	{Pid, Npcs} = State,
-	BinId = erlang:list_to_binary(NamedId),
-	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
-	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
+	Val1 = lookup_impl(Pid, NamedId),
 	{reply, {ok, Val1}, State};
 
 handle_call({run, IntervalMSec}, From, State) ->
@@ -128,7 +132,15 @@ handle_call({run, IntervalMSec}, From, State) ->
 			{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
 			Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 
-			npc_script:step(Val1)
+			% Get current NPC data.
+			CurrentNpcData = lookup_impl(Pid, X),
+			io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
+
+			% Get sensor data ( = now, this is get from map )
+			NearObjects = emmo_map:get_near_objects(X),
+			io:format("NearObjects : ~p~n", [NearObjects]),
+
+			npc_script:step(Val1 , CurrentNpcData, NearObjects)
 		end,
 		Npcs),
 	notifier:add(IntervalMSec, {mfa, npc_pool, run, [IntervalMSec]}),
