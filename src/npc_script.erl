@@ -25,7 +25,9 @@ step(NamedId , CurrentNpcData, NearObjects) ->
 %% Utlities
 %%
 
-choose_action(NpcData, NearObjects) -> 0.
+choose_action(NpcData, NearObjects) -> 
+%% in many characters
+{say, "crowd!"}.
 
 
 %%
