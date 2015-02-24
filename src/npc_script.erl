@@ -24,6 +24,7 @@ step(NamedId , CurrentNpcData, NearObjects) ->
 %%
 %% Utlities
 %%
+
 choose_action(NpcData, NearObjects) -> 0.
 
 
@@ -47,9 +48,8 @@ handle_call({step, NamedId, CurrentNpcData, NearObjects}, From, State) ->
 
 	% Select next action
 	NextAction = choose_action(CurrentNpcData, NearObjects),
+
 	io:format("NextAction : ~p~n", [NextAction]),
 
-	% Update values by next move
-
-	{reply, {ok, 0}, State}.
+	{reply, {ok, NextAction}, State}.
 
