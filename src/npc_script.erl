@@ -25,9 +25,13 @@ step(NamedId , CurrentNpcData, NearObjects) ->
 %% Utlities
 %%
 
-choose_action(NpcData, NearObjects) -> 
-%% in many characters
-{say, "crowd!"}.
+choose_action(NpcData, {ok, NearObjects}) -> 
+	NumObjects = length(NearObjects),
+	%% in many characters
+	case NumObjects > 4 of
+		true -> {say, "crowd!"};
+		_ -> {say, "ok"}
+	end.
 
 
 %%

@@ -10,6 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([remove_all/0]).
 -export([add/0]).
 -export([remove/1]).
 -export([online/1]).
@@ -24,6 +25,9 @@
 %%
 %% APIs
 %%
+
+remove_all() ->
+	Reply = gen_server:call(?MODULE, {remove_all}).
 
 add() ->
 	Reply = gen_server:call(?MODULE, {add, auto_increment}).
@@ -96,11 +100,19 @@ handle_call({add, auto_increment}, From, State) ->
 
 	{reply, {ok, NamedId}, NewState};
 
+handle_call({remove_all}, From, State) ->
+	{Pid, Npcs} = State,
+	%% BinId = erlang:list_to_binary(NamedId),
+	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
+	emmo_map:remove_all(),
+	{reply, ok, NewState};
+
 handle_call({remove, NamedId}, From, State) ->
 	{Pid, Npcs} = State,
 	NewState = {Pid, lists:delete(NamedId , Npcs)},
 	BinId = erlang:list_to_binary(NamedId),
 	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
+	emmo_map:remove(NamedId),
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({online, NamedId}, From, State) ->
