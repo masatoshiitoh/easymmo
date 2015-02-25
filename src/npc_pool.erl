@@ -10,6 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([list_all/0]).
 -export([remove_all/0]).
 -export([add/0]).
 -export([remove/1]).
@@ -28,6 +29,9 @@
 
 remove_all() ->
 	Reply = gen_server:call(?MODULE, {remove_all}).
+
+list_all() ->
+	Reply = gen_server:call(?MODULE, {list_all}).
 
 add() ->
 	Reply = gen_server:call(?MODULE, {add, auto_increment}).
@@ -100,12 +104,29 @@ handle_call({add, auto_increment}, From, State) ->
 
 	{reply, {ok, NamedId}, NewState};
 
+handle_call({list_all}, From, State) ->
+	{Pid, Npcs} = State,
+	Result = riakc_pb_socket:list_keys(Pid, ?MyBucket),
+	{reply, Result, State};
+
 handle_call({remove_all}, From, State) ->
 	{Pid, Npcs} = State,
-	%% BinId = erlang:list_to_binary(NamedId),
+	io:format("remove_all called -> Npcs = ~p~n", [Npcs]),
+	{ok, BinKeys} = riakc_pb_socket:list_keys(Pid, ?MyBucket),
+	Result = lists:foreach(fun(X) ->
+		riakc_pb_socket:delete(Pid, ?MyBucket, X),
+		emmo_map:remove(X)
+		end,
+	BinKeys),
+	{reply, Result, {Pid, []}};
+
+handle_call({remove, BinId}, From, State) when is_binary(BinId)->
+	{Pid, Npcs} = State,
+	NamedId = erlang:binary_to_list(BinId),
+	NewState = {Pid, lists:delete(NamedId , Npcs)},
 	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
-	emmo_map:remove_all(),
-	{reply, ok, NewState};
+	emmo_map:remove(NamedId),
+	{reply, {ok, NamedId}, NewState};
 
 handle_call({remove, NamedId}, From, State) ->
 	{Pid, Npcs} = State,

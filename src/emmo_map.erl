@@ -12,6 +12,7 @@
 -export([handle_call/3]).
 
 -export([add/2]).
+-export([remove_all/0]).
 -export([remove/1]).
 -export([move/2]).
 -export([move/2]).
@@ -43,6 +44,9 @@ test() ->
 
 add(Id, L) when is_record(L, loc) ->
 	Reply = gen_server:call(?MODULE, {add, Id, L}).
+
+remove_all() ->
+	Reply = gen_server:call(?MODULE, {remove_all}).
 
 remove(Id) ->
 	Reply = gen_server:call(?MODULE, {remove, Id}).
@@ -105,6 +109,22 @@ handle_call({add, Id, V}, From, State) ->
 	Obj2 = riakc_obj:update_metadata(Obj1, MD1),
 
 	riakc_pb_socket:put(Pid, Obj2),
+	{reply, ok, State};
+
+handle_call({remove_all}, From, State) ->
+	Pid = State,
+	MyBucket = <<"map">>,
+	{ok, BinKeys} = riakc_pb_socket:list_keys(Pid, MyBucket),
+	Result = lists:foreach(fun(X) ->
+		riakc_pb_socket:delete(Pid, MyBucket, X)
+		end,
+	BinKeys),
+	{reply, Result, Pid};
+
+handle_call({remove, BinId}, From, State) when is_binary(BinId) ->
+	Pid = State,
+	MyBucket = <<"map">>,
+	riakc_pb_socket:delete(Pid, MyBucket, BinId),
 	{reply, ok, State};
 
 handle_call({remove, Id}, From, State) ->
