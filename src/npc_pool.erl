@@ -10,6 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([reset/0]).
 -export([list_all/0]).
 -export([remove_all/0]).
 -export([add/0]).
@@ -26,6 +27,12 @@
 %%
 %% APIs
 %%
+
+reset() ->
+	npc_pool:remove_all(),
+	emmo_map:remove_all(),
+	npc_pool:run().
+
 
 remove_all() ->
 	Reply = gen_server:call(?MODULE, {remove_all}).
@@ -173,7 +180,12 @@ handle_call({run, IntervalMSec}, From, State) ->
 			NearObjects = emmo_map:get_near_objects(X),
 			%% io:format("NearObjects : ~p~n", [NearObjects]),
 
-			npc_script:step(Val1 , CurrentNpcData, NearObjects)
+			Step = npc_script:step(Val1 , CurrentNpcData, NearObjects),
+			case Step of
+				{ok, {say, "ok"}} -> 0;
+				{ok, {say, Msg}} -> io:format("[~p] ~p~n", [X, Msg]);
+				_ -> io:format("[~p] ~p~n", [X, Step])
+			end
 		end,
 		Npcs),
 	notifier:add(IntervalMSec, {mfa, npc_pool, run, [IntervalMSec]}),
