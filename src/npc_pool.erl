@@ -167,11 +167,11 @@ handle_call({run, IntervalMSec}, From, State) ->
 
 			% Get current NPC data.
 			CurrentNpcData = lookup_impl(Pid, X),
-			io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
+			%% io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
 
 			% Get sensor data ( = now, this is get from map )
 			NearObjects = emmo_map:get_near_objects(X),
-			io:format("NearObjects : ~p~n", [NearObjects]),
+			%% io:format("NearObjects : ~p~n", [NearObjects]),
 
 			npc_script:step(Val1 , CurrentNpcData, NearObjects)
 		end,

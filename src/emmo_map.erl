@@ -165,7 +165,7 @@ handle_call({get_near_objects, Id, Distance}, From, State) ->
 	#loc{map_id = MapId, x = X, y = Y} = impl_lookup(Pid, Id),
 	IdsOnSameMap = impl_lookup_with_integer(Pid, "map_id", MapId),
 	NearObjects = lists:filtermap(fun(Elem)->
-		io:format("filtermap calls with ~p~n", [Elem]),
+		% io:format("filtermap calls with ~p~n", [Elem]),
 		#loc{x = OX, y = OY} = impl_lookup(Pid, Elem),
 		D = distance(X, Y, OX, OY),
 		case D =< Distance of

@@ -55,7 +55,7 @@ handle_call({step, NamedId, CurrentNpcData, NearObjects}, From, State) ->
 	% Select next action
 	NextAction = choose_action(CurrentNpcData, NearObjects),
 
-	io:format("NextAction : ~p~n", [NextAction]),
+	% io:format("NextAction : ~p~n", [NextAction]),
 
 	{reply, {ok, NextAction}, State}.
 
