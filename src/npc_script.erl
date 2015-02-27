@@ -30,7 +30,7 @@ choose_action(NpcData, {ok, NearObjects}) ->
 	%% in many characters
 	case NumObjects > 4 of
 		true -> {say, "crowd!"};
-		_ -> {say, "ok"}
+		_ -> nop
 	end.
 
 

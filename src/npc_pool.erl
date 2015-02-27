@@ -182,10 +182,12 @@ handle_call({run, IntervalMSec}, From, State) ->
 
 			Step = npc_script:step(Val1 , CurrentNpcData, NearObjects),
 			case Step of
-				{ok, {say, "ok"}} -> 0;
+				{ok, nop} -> nop;
 				{ok, {say, Msg}} -> io:format("[~p] ~p~n", [X, Msg]);
 				_ -> io:format("[~p] ~p~n", [X, Step])
 			end
+
+			%% Store latest NearObjects to CurrentNpcData
 		end,
 		Npcs),
 	notifier:add(IntervalMSec, {mfa, npc_pool, run, [IntervalMSec]}),
