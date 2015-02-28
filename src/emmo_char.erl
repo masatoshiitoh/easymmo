@@ -6,6 +6,8 @@
 -module(emmo_char).
 % -include_lib("amqp_client.hrl").
 
+-include("emmo.hrl").
+
 -export([start_link/2]).
 -export([terminate/2]).
 -export([init/1]).
@@ -17,8 +19,6 @@
 -export([move/2]).
 -export([lookup/1]).
 -export([test/0]).
-
--record(character, {name = "", hp = 0, mp = 0, speed = 0}).
 
 %%
 %% APIs

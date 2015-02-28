@@ -5,6 +5,8 @@
 
 -module(npc_pool).
 
+-include("emmo.hrl").
+
 -export([start_link/2]).
 -export([terminate/2]).
 -export([init/1]).
@@ -102,7 +104,8 @@ handle_call({add, auto_increment}, From, State) ->
 	NamedId = rutil:named_id("npc", rutil:auto_increment("npc")),
 	BinId = erlang:list_to_binary(NamedId),
 	NewNpc = get_new_npc(),
-	Obj1 = riakc_obj:new(?MyBucket, BinId, NewNpc),
+	NewNpc2 = NewNpc#character{name  = "goba" ++ integer_to_list( random:uniform(10000))},
+	Obj1 = riakc_obj:new(?MyBucket, BinId, NewNpc2),
 	riakc_pb_socket:put(Pid, Obj1),
 	NewState = {Pid, [NamedId | Npcs]},
 
@@ -177,17 +180,20 @@ handle_call({run, IntervalMSec}, From, State) ->
 			%% io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
 
 			% Get sensor data ( = now, this is get from map )
-			NearObjects = emmo_map:get_near_objects(X),
+			{ok, NearObjects} = emmo_map:get_near_objects(X),
 			%% io:format("NearObjects : ~p~n", [NearObjects]),
 
 			Step = npc_script:step(Val1 , CurrentNpcData, NearObjects),
 			case Step of
 				{ok, nop} -> nop;
-				{ok, {say, Msg}} -> io:format("[~p] ~p~n", [X, Msg]);
+				{ok, {say, Msg}} -> io:format("[~p] ~p~n", [CurrentNpcData#character.name, Msg]);
 				_ -> io:format("[~p] ~p~n", [X, Step])
-			end
+			end,
 
 			%% Store latest NearObjects to CurrentNpcData
+			Memoried1 = Val1#character{near_objects = NearObjects, bye = []},
+			Updated1 = riakc_obj:update_value(Fetched1, Memoried1),
+			riakc_pb_socket:put(Pid, Updated1, [return_body])
 		end,
 		Npcs),
 	notifier:add(IntervalMSec, {mfa, npc_pool, run, [IntervalMSec]}),

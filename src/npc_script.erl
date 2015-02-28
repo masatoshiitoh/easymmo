@@ -5,6 +5,8 @@
 
 -module(npc_script).
 
+-include("emmo.hrl").
+
 -export([start_link/2]).
 -export([terminate/2]).
 -export([init/1]).
@@ -25,12 +27,19 @@ step(NamedId , CurrentNpcData, NearObjects) ->
 %% Utlities
 %%
 
-choose_action(NpcData, {ok, NearObjects}) -> 
+choose_action(NpcData, NearObjects) -> 
 	NumObjects = length(NearObjects),
+
 	%% in many characters
-	case NumObjects > 4 of
-		true -> {say, "crowd!"};
-		_ -> nop
+	MemoryNearObjects = NpcData#character.near_objects,
+
+	NewComers = lists:subtract(NearObjects , MemoryNearObjects),
+	Lefts = lists:subtract(MemoryNearObjects, NearObjects),
+
+	NumNewComer = length(NewComers),
+	case NumNewComer > 0 of
+		true -> {say, io_lib:format("hello, ~p", [NewComers])};
+		_ -> {nop}
 	end.
 
 
