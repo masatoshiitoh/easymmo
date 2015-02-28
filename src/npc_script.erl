@@ -39,7 +39,7 @@ choose_action(NpcData, NearObjects) ->
 	NumNewComer = length(NewComers),
 	case NumNewComer > 0 of
 		true -> {say, io_lib:format("hello, ~p", [NewComers])};
-		_ -> {nop}
+		_ -> nop
 	end.
 
 
