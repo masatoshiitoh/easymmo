@@ -78,11 +78,13 @@ get_new_location() ->
 	{ok, V} = emmo_map:npc_new_location(),
 	V.
 
-lookup_impl(Pid, NamedId) ->
+lookup_impl(Pid, NamedId) when is_list(NamedId)->
 	BinId = erlang:list_to_binary(NamedId),
+	lookup_impl(Pid, BinId);
+
+lookup_impl(Pid, BinId) when is_binary(BinId) ->
 	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)).
-
 
 %%
 %% Behaviors
@@ -186,8 +188,10 @@ handle_call({run, IntervalMSec}, From, State) ->
 			Step = npc_script:step(Val1 , CurrentNpcData, NearObjects),
 			case Step of
 				{ok, nop} -> nop;
-				{ok, {say, Msg}} -> io:format("[~p] ~p~n", [CurrentNpcData#character.name, Msg]);
-				_ -> io:format("[~p] ~p~n", [X, Step])
+				{ok, {say_hello, NewId}} ->
+					NewComer = lookup_impl(Pid, NewId),
+					io:format("[~p] hello, ~p~n", [CurrentNpcData#character.name, NewComer#character.name]);
+				_ -> io:format("unknown : [~p] ~p~n", [X, Step])
 			end,
 
 			%% Store latest NearObjects to CurrentNpcData

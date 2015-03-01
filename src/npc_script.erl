@@ -28,17 +28,15 @@ step(NamedId , CurrentNpcData, NearObjects) ->
 %%
 
 choose_action(NpcData, NearObjects) -> 
-	NumObjects = length(NearObjects),
 
-	%% in many characters
 	MemoryNearObjects = NpcData#character.near_objects,
-
 	NewComers = lists:subtract(NearObjects , MemoryNearObjects),
 	Lefts = lists:subtract(MemoryNearObjects, NearObjects),
 
 	NumNewComer = length(NewComers),
-	case NumNewComer > 0 of
-		true -> {say, io_lib:format("hello, ~p", [NewComers])};
+	case NumNewComer of
+		1 -> [H|T] = NewComers,
+			{say_hello, H};
 		_ -> nop
 	end.
 
@@ -61,10 +59,7 @@ terminate(_Reason, State) ->
 handle_call({step, NamedId, CurrentNpcData, NearObjects}, From, State) ->
 	{Pid, Npcs} = State,
 
-	% Select next action
 	NextAction = choose_action(CurrentNpcData, NearObjects),
-
-	% io:format("NextAction : ~p~n", [NextAction]),
 
 	{reply, {ok, NextAction}, State}.
 
