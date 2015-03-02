@@ -191,6 +191,9 @@ handle_call({run, IntervalMSec}, From, State) ->
 				{ok, {say_hello, NewId}} ->
 					NewComer = lookup_impl(Pid, NewId),
 					io:format("[~p] hello, ~p~n", [CurrentNpcData#character.name, NewComer#character.name]);
+				{ok, {say_goodbye, LeftId}} ->
+					%%NewComer = lookup_impl(Pid, LeftId),
+					io:format("[~p] bye~n", [CurrentNpcData#character.name]);
 				_ -> io:format("unknown : [~p] ~p~n", [X, Step])
 			end,
 

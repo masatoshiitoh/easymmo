@@ -37,7 +37,13 @@ choose_action(NpcData, NearObjects) ->
 	case NumNewComer of
 		1 -> [H|T] = NewComers,
 			{say_hello, H};
-		_ -> nop
+		_ -> 
+			NumLeft = length(Lefts),
+			case NumLeft of
+				1 -> [H|T] = Lefts,
+					{say_goodbye, H};
+				_ -> nop
+			end
 	end.
 
 
