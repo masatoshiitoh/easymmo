@@ -185,7 +185,9 @@ handle_call({run, IntervalMSec}, From, State) ->
 			{ok, NearObjects} = emmo_map:get_near_objects(X),
 			%% io:format("NearObjects : ~p~n", [NearObjects]),
 
-			Step = npc_script:step(Val1 , CurrentNpcData, NearObjects),
+			{ok, CurrentLocation} = emmo_map:lookup(X),
+
+			Step = npc_script:step(Val1 , CurrentLocation, CurrentNpcData, NearObjects),
 			case Step of
 				{ok, nop} -> nop;
 				{ok, {say_hello, NewId}} ->

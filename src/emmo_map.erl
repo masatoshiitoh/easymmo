@@ -5,6 +5,7 @@
 
 -module(emmo_map).
 % -include_lib("amqp_client.hrl").
+-include("emmo.hrl").
 
 -export([start_link/2]).
 -export([terminate/2]).
@@ -23,7 +24,6 @@
 -export([get_near_objects/2]).
 -export([test/0]).
 
--record(loc, {map_id = 0, x = 0, y = 0}).
 
 %%
 %% APIs

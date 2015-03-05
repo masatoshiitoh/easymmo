@@ -12,7 +12,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
--export([step/3]).
+-export([step/4]).
 
 -define(MyBucket, <<"characters">>).
 
@@ -20,19 +20,29 @@
 %% APIs
 %%
 
-step(NamedId , CurrentNpcData, NearObjects) ->
-	Reply = gen_server:call(?MODULE, {step, NamedId , CurrentNpcData, NearObjects}).
+step(NamedId , CurrentLocation, CurrentNpcData, NearObjects) ->
+	Reply = gen_server:call(?MODULE, {step, NamedId , CurrentLocation, CurrentNpcData, NearObjects}).
 
 %%
 %% Utlities
 %%
 
-choose_action(NpcData, NearObjects) -> 
 
+choose_action(CurrentLocation, NpcData, NearObjects) -> 
 	MemoryNearObjects = NpcData#character.near_objects,
 	NewComers = lists:subtract(NearObjects , MemoryNearObjects),
 	Lefts = lists:subtract(MemoryNearObjects, NearObjects),
+	A = choose_greeting(NewComers, Lefts),
+	case A of
+		nop -> move_random_rel(CurrentLocation);
+		nop_abs -> move_random_abs(CurrentLocation);
+		_ -> A
+	end.
 
+move_random_rel(CurrentLocation) -> {move, {rel, -2 + random:uniform(5), -2 + random:uniform(5)}}.
+move_random_abs(CurrentLocation) -> {move, CurrentLocation#loc{x= 10001, y = 10002}}.
+
+choose_greeting(NewComers, Lefts) ->
 	NumNewComer = length(NewComers),
 	case NumNewComer of
 		1 -> [H|T] = NewComers,
@@ -45,7 +55,6 @@ choose_action(NpcData, NearObjects) ->
 				_ -> nop
 			end
 	end.
-
 
 %%
 %% Behaviors
@@ -62,10 +71,10 @@ init(Args) ->
 terminate(_Reason, State) ->
 	ok.
 
-handle_call({step, NamedId, CurrentNpcData, NearObjects}, From, State) ->
+handle_call({step, NamedId, CurrentLocation, CurrentNpcData, NearObjects}, From, State) ->
 	{Pid, Npcs} = State,
 
-	NextAction = choose_action(CurrentNpcData, NearObjects),
+	NextAction = choose_action(CurrentLocation, CurrentNpcData, NearObjects),
 
 	{reply, {ok, NextAction}, State}.
 
