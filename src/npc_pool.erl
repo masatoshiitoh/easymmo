@@ -196,6 +196,12 @@ handle_call({run, IntervalMSec}, From, State) ->
 				{ok, {say_goodbye, LeftId}} ->
 					%%NewComer = lookup_impl(Pid, LeftId),
 					io:format("[~p] bye~n", [CurrentNpcData#character.name]);
+				{ok, {move, {rel, DeltaX, DeltaY}}} ->
+					NewX = CurrentLocation#loc.x + DeltaX,
+					NewY = CurrentLocation#loc.y + DeltaY,
+					NewLoc = CurrentLocation#loc{x = NewX, y = NewY},
+					emmo_map:move(X, NewLoc),
+					io:format("[~p] move rel ~p~n", [ CurrentNpcData#character.name, {DeltaX, DeltaY}]);
 				_ -> io:format("unknown : [~p] ~p~n", [X, Step])
 			end,
 

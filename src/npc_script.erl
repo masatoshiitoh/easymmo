@@ -32,14 +32,17 @@ choose_action(CurrentLocation, NpcData, NearObjects) ->
 	MemoryNearObjects = NpcData#character.near_objects,
 	NewComers = lists:subtract(NearObjects , MemoryNearObjects),
 	Lefts = lists:subtract(MemoryNearObjects, NearObjects),
-	A = choose_greeting(NewComers, Lefts),
-	case A of
-		nop -> move_random_rel(CurrentLocation);
-		nop_abs -> move_random_abs(CurrentLocation);
-		_ -> A
+
+	case length(NearObjects) > 3 of
+		true ->
+			move_random_rel(CurrentLocation);
+			%%nop_abs -> move_random_abs(CurrentLocation)
+
+		_ ->
+			choose_greeting(NewComers, Lefts)
 	end.
 
-move_random_rel(CurrentLocation) -> {move, {rel, -2 + random:uniform(5), -2 + random:uniform(5)}}.
+move_random_rel(_CurrentLocation) -> {move, {rel, -2 + random:uniform(5), -2 + random:uniform(5)}}.
 move_random_abs(CurrentLocation) -> {move, CurrentLocation#loc{x= 10001, y = 10002}}.
 
 choose_greeting(NewComers, Lefts) ->
