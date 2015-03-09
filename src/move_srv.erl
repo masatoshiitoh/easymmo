@@ -10,14 +10,18 @@
 -export([terminate/2]).
 -export([init/1]).
 -export([handle_info/2]).
+-export([move_abs/2]).
+-export([move_rel/3]).
 
 %%
 %% APIs
 %%
 
-move_abs(Id, To) ->0.
+move_abs(Id, Loc) ->
+	Reply = gen_server:call(?MODULE, {move_abs, Id, Loc}).
 
-move_rel(Id, Delta) ->0.
+move_rel(Id, X, Y) ->
+	Reply = gen_server:call(?MODULE, {move_rel, Id, X, Y}).
 
 
 %%
