@@ -192,16 +192,21 @@ handle_call({run, IntervalMSec}, From, State) ->
 				{ok, nop} -> nop;
 				{ok, {say_hello, NewId}} ->
 					NewComer = lookup_impl(Pid, NewId),
-					io:format("[~p] hello, ~p~n", [CurrentNpcData#character.name, NewComer#character.name]);
+					io:format("[~p] hello, ~p~n", [CurrentNpcData#character.name, NewComer#character.name]),
+					Msg = io_lib:format("hello, ~p", [NewComer#character.name]),
+					chat_srv:broadcast(X, Msg);
 				{ok, {say_goodbye, LeftId}} ->
 					%%NewComer = lookup_impl(Pid, LeftId),
-					io:format("[~p] bye~n", [CurrentNpcData#character.name]);
+					io:format("[~p] bye~n", [CurrentNpcData#character.name]),
+					Msg = io_lib:format("bye ~p", [binary_to_list(LeftId)]),
+					chat_srv:broadcast(X, Msg);
 				{ok, {move, {rel, DeltaX, DeltaY}}} ->
 					NewX = CurrentLocation#loc.x + DeltaX,
 					NewY = CurrentLocation#loc.y + DeltaY,
 					NewLoc = CurrentLocation#loc{x = NewX, y = NewY},
 					emmo_map:move(X, NewLoc),
-					io:format("[~p] move rel ~p~n", [ CurrentNpcData#character.name, {DeltaX, DeltaY}]);
+					io:format("[~p] move rel ~p~n", [ CurrentNpcData#character.name, {DeltaX, DeltaY}]),
+					move_srv:move_rel(X, DeltaX, DeltaY);
 				_ -> io:format("unknown : [~p] ~p~n", [X, Step])
 			end,
 
