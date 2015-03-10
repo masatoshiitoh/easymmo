@@ -47,7 +47,7 @@ handle_call({move_abs, Id, Loc}, From, State) when is_record(Loc, loc)->
 	Payload = io_lib:format("move,abs,~p,~p,~p", [Id, Loc#loc.x, Loc#loc.y]),
 	BinMsg = list_to_binary(Payload) ,
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = FromClientEx, routing_key = <<"id.99999">> },
+		#'basic.publish'{exchange = FromClientEx, routing_key = <<"move.id.99999">> },
 		#amqp_msg{payload = BinMsg}),
 	{reply, ok, State};
 
@@ -56,7 +56,7 @@ handle_call({move_rel, Id, DeltaX, DeltaY}, From, State) ->
 	Payload = io_lib:format("move,rel,~p,~p,~p", [Id, DeltaX, DeltaY]),
 	BinMsg = list_to_binary(Payload) ,
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = FromClientEx, routing_key = <<"id.99999">> },
+		#'basic.publish'{exchange = FromClientEx, routing_key = <<"move.id.99999">> },
 		#amqp_msg{payload = BinMsg}),
 	{reply, ok, State}.
 
