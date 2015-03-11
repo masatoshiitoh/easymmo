@@ -42,7 +42,7 @@ handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = B
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	Message = <<"info: Hello, this is chat_srv! ">> ,
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = ToClientEx, routing_key = <<"id.99999">> },
+		#'basic.publish'{exchange = ToClientEx, routing_key = <<"chat.open">> },
 		#amqp_msg{payload = Message}),
 	{noreply, State}.
 
@@ -50,7 +50,7 @@ handle_call({broadcast, Id, Payload}, From, State) ->
 	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	BinMsg = list_to_binary(Payload) ,
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = FromClientEx, routing_key = <<"id.99999">> },
+		#'basic.publish'{exchange = FromClientEx, routing_key = <<"chat.open">> },
 		#amqp_msg{payload = BinMsg}),
 	{reply, ok, State}.
 
