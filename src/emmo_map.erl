@@ -15,7 +15,6 @@
 -export([remove_all/0]).
 -export([remove/1]).
 -export([move/2]).
--export([move/2]).
 -export([lookup/1]).
 -export([npc_new_location/0]).
 -export([lookup_by_map/1]).
@@ -94,7 +93,7 @@ init(Args) ->
 terminate(_Reason, State) ->
 	ok.
 
-handle_call({add, Id, V}, From, State) ->
+handle_call({add, Id, V}, From, State) when is_list(Id) ->
 	Pid = State,
 	MyBucket = <<"map">>,
 	BinId = erlang:list_to_binary(Id),
@@ -127,14 +126,14 @@ handle_call({remove, BinId}, From, State) when is_binary(BinId) ->
 	riakc_pb_socket:delete(Pid, MyBucket, BinId),
 	{reply, ok, State};
 
-handle_call({remove, Id}, From, State) ->
+handle_call({remove, Id}, From, State) when is_list(Id) ->
 	Pid = State,
 	MyBucket = <<"map">>,
 	BinId = erlang:list_to_binary(Id),
 	riakc_pb_socket:delete(Pid, MyBucket, BinId),
 	{reply, ok, State};
 
-handle_call({move, Id, NewV}, From, State) ->
+handle_call({move, Id, NewV}, From, State) when is_list(Id) ->
 	Pid = State,
 	MyBucket = <<"map">>,
 	BinId = erlang:list_to_binary(Id),
@@ -145,27 +144,29 @@ handle_call({move, Id, NewV}, From, State) ->
 	NewV = binary_to_term(riakc_obj:get_value(NewestObj1)),
 	{reply, ok, State};
 
-handle_call({lookup, Id}, From, State) ->
+handle_call({lookup, Id}, From, State) when is_list(Id) ->
 	Pid = State,
 	Val1 = impl_lookup(Pid, Id),
-	{reply, {ok, Val1}, State};
+	TextVals = rutil:keys_to_lists(Val1),
+	{reply, {ok, TextVals}, State};
 
 handle_call({lookup_with_integer, Attr, K}, From, State) ->
 	Pid = State,
 	V = impl_lookup_with_integer(Pid, Attr, K),
-	{reply, {ok, V}, State};
+	TextVal = binary_to_list(V),
+	{reply, {ok, TextVal}, State};
 
 handle_call({new_location, "npc"}, From, State) ->
 	Pid = State,
 	L1 = #loc{map_id = 1, x=99 + random:uniform(10), y=88 + random:uniform(10)},
 	{reply, {ok, L1}, State};
 
-handle_call({get_near_objects, Id, Distance}, From, State) ->
+handle_call({get_near_objects, Id, Distance}, From, State) when is_list(Id) ->
 	Pid = State,
 	#loc{map_id = MapId, x = X, y = Y} = impl_lookup(Pid, Id),
 	IdsOnSameMap = impl_lookup_with_integer(Pid, "map_id", MapId),
 	NearObjects = lists:filtermap(fun(Elem)->
-		% io:format("filtermap calls with ~p~n", [Elem]),
+		io:format("filtermap calls with ~p~n", [Elem]),
 		#loc{x = OX, y = OY} = impl_lookup(Pid, Elem),
 		D = distance(X, Y, OX, OY),
 		case D =< Distance of

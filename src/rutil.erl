@@ -15,6 +15,7 @@
 -export([auto_increment/1]).
 -export([ai/0]).
 -export([ai/1]).
+-export([keys_to_lists/1]).
 
 -define(CounterBucket, <<"rutil_counter">>).
 -define(DefaultCounter, <<"default">>).
@@ -28,6 +29,9 @@
 %
 named_id(Name, Id) when is_list(Name), is_integer(Id) ->
 	lists:append(Name, integer_to_list(Id)).
+
+keys_to_lists(BinArray) ->
+	lists:map(fun(X) -> binary_to_list(X) end, BinArray).
 
 %
 % auto increment functions.

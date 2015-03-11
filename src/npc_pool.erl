@@ -119,7 +119,8 @@ handle_call({add, auto_increment}, From, State) ->
 handle_call({list_all}, From, State) ->
 	{Pid, Npcs} = State,
 	Result = riakc_pb_socket:list_keys(Pid, ?MyBucket),
-	{reply, Result, State};
+	TextResult = rutil:keys_to_lists(Result),
+	{reply, TextResult, State};
 
 handle_call({remove_all}, From, State) ->
 	{Pid, Npcs} = State,
@@ -140,7 +141,7 @@ handle_call({remove, BinId}, From, State) when is_binary(BinId)->
 	emmo_map:remove(NamedId),
 	{reply, {ok, NamedId}, NewState};
 
-handle_call({remove, NamedId}, From, State) ->
+handle_call({remove, NamedId}, From, State) when is_list(NamedId) ->
 	{Pid, Npcs} = State,
 	NewState = {Pid, lists:delete(NamedId , Npcs)},
 	BinId = erlang:list_to_binary(NamedId),
@@ -148,23 +149,23 @@ handle_call({remove, NamedId}, From, State) ->
 	emmo_map:remove(NamedId),
 	{reply, {ok, NamedId}, NewState};
 
-handle_call({online, NamedId}, From, State) ->
+handle_call({online, NamedId}, From, State) when is_list(NamedId) ->
 	{Pid, Npcs} = State,
 	BinId = erlang:list_to_binary(NamedId),
 	{ok, _} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),	%% check if key existing "BinId"
 	NewState = {Pid, [NamedId | Npcs]},
 	{reply, ok, NewState};
 
-handle_call({offline, NamedId}, From, State) ->
+handle_call({offline, NamedId}, From, State) when is_list(NamedId) ->
 	{Pid, Npcs} = State,
 	NewState = {Pid, lists:delete(NamedId , Npcs)},
 	{reply, {ok, NamedId}, NewState};
 
-handle_call({is_on, NamedId}, From, State) ->
+handle_call({is_on, NamedId}, From, State) when is_list(NamedId) ->
 	{_, Npcs} = State,
 	{reply, {ok, lists:member(NamedId , Npcs)}, State};
 
-handle_call({lookup, NamedId}, From, State) ->
+handle_call({lookup, NamedId}, From, State) when is_list(NamedId) ->
 	{Pid, Npcs} = State,
 	Val1 = lookup_impl(Pid, NamedId),
 	{reply, {ok, Val1}, State};
@@ -179,11 +180,11 @@ handle_call({run, IntervalMSec}, From, State) ->
 
 			% Get current NPC data.
 			CurrentNpcData = lookup_impl(Pid, X),
-			%% io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
+			io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
 
 			% Get sensor data ( = now, this is get from map )
 			{ok, NearObjects} = emmo_map:get_near_objects(X),
-			%% io:format("NearObjects : ~p~n", [NearObjects]),
+			io:format("NearObjects : ~p~n", [NearObjects]),
 
 			Step = npc_script:step(Val1 , CurrentNpcData, NearObjects),
 			case Step of
