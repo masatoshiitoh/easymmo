@@ -147,8 +147,7 @@ handle_call({move, Id, NewV}, From, State) when is_list(Id) ->
 handle_call({lookup, Id}, From, State) when is_list(Id) ->
 	Pid = State,
 	Val1 = impl_lookup(Pid, Id),
-	TextVals = rutil:keys_to_lists(Val1),
-	{reply, {ok, TextVals}, State};
+	{reply, {ok, Val1}, State};
 
 handle_call({lookup_with_integer, Attr, K}, From, State) ->
 	Pid = State,
@@ -174,7 +173,8 @@ handle_call({get_near_objects, Id, Distance}, From, State) when is_list(Id) ->
 			false -> false
 		end 
 	end, IdsOnSameMap),
-	{reply, {ok, NearObjects}, State}.
+	TextNearObjects = rutil:keys_to_lists(NearObjects),
+	{reply, {ok, TextNearObjects}, State}.
 
 impl_lookup(Pid, Id) when is_list(Id) ->
 	BinId = erlang:list_to_binary(Id),

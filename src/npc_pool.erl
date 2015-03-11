@@ -12,6 +12,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([test/0]).
 -export([reset/0]).
 -export([list_all/0]).
 -export([remove_all/0]).
@@ -29,6 +30,14 @@
 %%
 %% APIs
 %%
+
+test() ->
+	reset(),
+	add(),
+	add(),
+	add(),
+	add(),
+	add().
 
 reset() ->
 	npc_pool:remove_all(),
@@ -172,6 +181,7 @@ handle_call({lookup, NamedId}, From, State) when is_list(NamedId) ->
 
 handle_call({run, IntervalMSec}, From, State) ->
 	{Pid, Npcs} = State,
+	io:format("run Npcs : ~p~n", [Npcs]),
 	Val1 = lists:map(
 		fun(X) ->
 			BinId = erlang:list_to_binary(X),
@@ -199,7 +209,7 @@ handle_call({run, IntervalMSec}, From, State) ->
 				{ok, {say_goodbye, LeftId}} ->
 					%%NewComer = lookup_impl(Pid, LeftId),
 					io:format("[~p] bye~n", [CurrentNpcData#character.name]),
-					Msg = io_lib:format("bye ~p", [binary_to_list(LeftId)]),
+					Msg = io_lib:format("bye ~p", [LeftId]),
 					chat_srv:broadcast(X, Msg);
 				{ok, {move, {rel, DeltaX, DeltaY}}} ->
 					NewX = CurrentLocation#loc.x + DeltaX,
