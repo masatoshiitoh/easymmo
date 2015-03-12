@@ -55,8 +55,9 @@ handle_call({move_rel, Id, DeltaX, DeltaY}, From, State) ->
 	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	Payload = io_lib:format("move,rel,~p,~p,~p", [Id, DeltaX, DeltaY]),
 	BinMsg = list_to_binary(Payload) ,
+	BinRoutingKey = list_to_binary("move.id." ++ Id ),
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = FromClientEx, routing_key = <<"move.id.99999">> },
+		#'basic.publish'{exchange = FromClientEx, routing_key = BinRoutingKey },
 		#amqp_msg{payload = BinMsg}),
 	{reply, ok, State}.
 
@@ -68,8 +69,9 @@ handle_info(#'basic.consume_ok'{}, State) ->
 handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	BinMsg = <<"info: Hello, this is move_srv!">>,
+	BinRoutingKey = list_to_binary("move.id.99999"),
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = ToClientEx, routing_key = <<"move.id.99999">> },
+		#'basic.publish'{exchange = ToClientEx, routing_key = BinRoutingKey },
 		#amqp_msg{payload = BinMsg}),
 	{noreply, State}.
 

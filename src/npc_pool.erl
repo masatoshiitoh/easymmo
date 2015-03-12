@@ -181,7 +181,7 @@ handle_call({lookup, NamedId}, From, State) when is_list(NamedId) ->
 
 handle_call({run, IntervalMSec}, From, State) ->
 	{Pid, Npcs} = State,
-	io:format("run Npcs : ~p~n", [Npcs]),
+	%% io:format("run Npcs : ~p~n", [Npcs]),
 	Val1 = lists:map(
 		fun(X) ->
 			BinId = erlang:list_to_binary(X),
