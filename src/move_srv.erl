@@ -1,6 +1,8 @@
 %%
 %% move_srv.erl
 %%
+%% This module handles "I moved" messages from clients and NPCs.
+%% And this will enter "it moved" messages into  appropriate receiver(client)s' via ToClientEx.
 %%
 
 -module(move_srv).
@@ -46,8 +48,9 @@ handle_call({move_abs, Id, Loc}, From, State) when is_record(Loc, loc)->
 	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	Payload = io_lib:format("move,abs,~p,~p,~p", [Id, Loc#loc.x, Loc#loc.y]),
 	BinMsg = list_to_binary(Payload) ,
+	BinRoutingKey = list_to_binary("move.id." ++ Id ),
 	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = FromClientEx, routing_key = <<"move.id.99999">> },
+		#'basic.publish'{exchange = FromClientEx, routing_key = BinRoutingKey },
 		#amqp_msg{payload = BinMsg}),
 	{reply, ok, State};
 
