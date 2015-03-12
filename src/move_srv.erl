@@ -72,7 +72,7 @@ handle_info(#'basic.consume_ok'{}, State) ->
 handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	BinMsg = <<"info: Hello, this is move_srv!">>,
-	BinRoutingKey = list_to_binary("move.id.99999"),
+	BinRoutingKey = list_to_binary("move.map.all"),
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = ToClientEx, routing_key = BinRoutingKey },
 		#amqp_msg{payload = BinMsg}),
