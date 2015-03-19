@@ -37,7 +37,8 @@ test() ->
 	add(),
 	add(),
 	add(),
-	add().
+	add(),
+	jsx:encode([{<<"library">>,<<"jsx">>},{<<"awesome">>,true}]).
 
 reset() ->
 	npc_pool:remove_all(),

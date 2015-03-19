@@ -48,7 +48,8 @@ handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = B
 
 handle_call({broadcast, Id, Payload}, From, State) ->
 	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	BinMsg = list_to_binary(Payload) ,
+	BinMsg = jsx:encode([{<<"id">>, list_to_binary(Id)}, {<<"message">>, list_to_binary(Payload)}]),
+	%%BinMsg = list_to_binary(JsonMsg) ,
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = FromClientEx, routing_key = <<"chat.open">> },
 		#amqp_msg{payload = BinMsg}),
