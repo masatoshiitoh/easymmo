@@ -58,7 +58,7 @@ handle_call({move_rel, Id, DeltaX, DeltaY}, From, State) ->
 	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	%Payload = io_lib:format("move,rel,~p,~p,~p", [Id, DeltaX, DeltaY]),
 	%%BinMsg = list_to_binary(Payload) ,
-	BinMsg = jsx:encode([{<<"type">>,<<"rel">>},{<<"x">>, DeltaX}, {<<"y">>, DeltaY}]),
+	BinMsg = jsx:encode([{<<"type">>,<<"rel">>},{<<"id">>,list_to_binary(Id)},{<<"x">>, DeltaX}, {<<"y">>, DeltaY}]),
 	BinRoutingKey = list_to_binary("move.id." ++ Id ),
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = FromClientEx, routing_key = BinRoutingKey },
