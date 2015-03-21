@@ -124,6 +124,8 @@ handle_call({add, auto_increment}, From, State) ->
 	NewLoc = get_new_location(), 
 	emmo_map:add(NamedId, NewLoc),
 
+	object_srv:add(NamedId),
+
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({list_all}, From, State) ->
@@ -149,6 +151,7 @@ handle_call({remove, BinId}, From, State) when is_binary(BinId)->
 	NewState = {Pid, lists:delete(NamedId , Npcs)},
 	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
 	emmo_map:remove(NamedId),
+	object_srv:del(NamedId),
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({remove, NamedId}, From, State) when is_list(NamedId) ->
@@ -157,6 +160,7 @@ handle_call({remove, NamedId}, From, State) when is_list(NamedId) ->
 	BinId = erlang:list_to_binary(NamedId),
 	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
 	emmo_map:remove(NamedId),
+	object_srv:del(NamedId),
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({online, NamedId}, From, State) when is_list(NamedId) ->

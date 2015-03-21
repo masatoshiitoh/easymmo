@@ -1,11 +1,11 @@
 %%
-%% move_srv.erl
+%% object_srv.erl
 %%
-%% This module handles "I moved" messages from clients and NPCs.
-%% And this will enter "it moved" messages into  appropriate receiver(client)s' via ToClientEx.
+%% This module handles "Object added/removed" messages from clients and NPCs.
+%% And this will enter "I appeared/disappeared" messages into  appropriate receiver(client)s' via ToClientEx.
 %%
 
--module(move_srv).
+-module(object_srv).
 -include_lib("amqp_client.hrl").
 
 -include("emmo.hrl").
@@ -16,18 +16,18 @@
 -export([handle_info/2]).
 -export([handle_call/3]).
 
--export([move_abs/2]).
--export([move_rel/3]).
+-export([add/1]).
+-export([del/1]).
 
 %%
 %% APIs
 %%
 
-move_abs(Id, Loc) ->
-	Reply = gen_server:call(?MODULE, {move_abs, Id, Loc}).
+add(Id) ->
+	Reply = gen_server:call(?MODULE, {add, Id}).
 
-move_rel(Id, X, Y) ->
-	Reply = gen_server:call(?MODULE, {move_rel, Id, X, Y}).
+del(Id) ->
+	Reply = gen_server:call(?MODULE, {del, Id}).
 
 
 %%
@@ -38,28 +38,25 @@ start_link(ServerIp, ToClientEx, FromClientEx) ->
 
 init(Args) ->
     [ServerIp, ToClientEx, FromClientEx] = Args,
-	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"move.#">>])}.
+	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"object.#">>])}.
 
 terminate(_Reason, State) ->
 	bidir_mq:shutdown_by_state(State),
 	ok.
 
-handle_call({move_abs, Id, Loc}, From, State) when is_record(Loc, loc)->
+handle_call({add, Id}, From, State) ->
 	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	Payload = io_lib:format("move,abs,~p,~p,~p", [Id, Loc#loc.x, Loc#loc.y]),
-	BinMsg = list_to_binary(Payload) ,
-	BinRoutingKey = list_to_binary("move.id." ++ Id ),
+	BinMsg = jsx:encode([{<<"type">>,<<"add">>},{<<"id">>,list_to_binary(Id)}]),
+	BinRoutingKey = list_to_binary("object.id." ++ Id ),
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = FromClientEx, routing_key = BinRoutingKey },
 		#amqp_msg{payload = BinMsg}),
 	{reply, ok, State};
 
-handle_call({move_rel, Id, DeltaX, DeltaY}, From, State) ->
+handle_call({del, Id}, From, State) ->
 	{_ServerIp, ToClientEx, FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	%Payload = io_lib:format("move,rel,~p,~p,~p", [Id, DeltaX, DeltaY]),
-	%%BinMsg = list_to_binary(Payload) ,
-	BinMsg = jsx:encode([{<<"type">>,<<"rel">>},{<<"id">>,list_to_binary(Id)},{<<"x">>, DeltaX}, {<<"y">>, DeltaY}]),
-	BinRoutingKey = list_to_binary("move.id." ++ Id ),
+	BinMsg = jsx:encode([{<<"type">>,<<"del">>},{<<"id">>,list_to_binary(Id)}]),
+	BinRoutingKey = list_to_binary("object.id." ++ Id ),
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = FromClientEx, routing_key = BinRoutingKey },
 		#amqp_msg{payload = BinMsg}),
@@ -72,12 +69,13 @@ handle_info(#'basic.consume_ok'{}, State) ->
 %% while subscribing, message will be delivered by #amqp_msg
 handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	%% BinMsg = [<<"info: Auto-reply, this is move_srv! your message is ">> , Body],
-	BinMsg = Body,
-	BinRoutingKey = list_to_binary("move.map.all"),
+	BinMsg = [<<"info: Auto-reply, this is object_srv! your message is ">> , Body],
+%%	BinMsg = Body,
+	BinRoutingKey = list_to_binary("object.map.all"),
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = ToClientEx, routing_key = BinRoutingKey },
 		#amqp_msg{payload = BinMsg}),
 	{noreply, State}.
+
 
 

@@ -34,7 +34,8 @@ init([]) ->
 	npc_script(),
 	time_feeder(), 
 	chat_srv(),
-	move_srv()
+	move_srv(),
+	object_srv()
 	],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
@@ -74,6 +75,19 @@ move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	Type = worker,
 	Modules = [move_srv],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+object_srv() ->
+	object_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
+
+object_srv_one(ServerIp, ToClientEx, FromClientEx) ->
+	ID = object_srv,
+	StartFunc = {object_srv, start_link, [ServerIp, ToClientEx, FromClientEx]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [object_srv],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 
 notifier() ->
 	notifier_one().

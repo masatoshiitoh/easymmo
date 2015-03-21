@@ -40,7 +40,7 @@ handle_info(#'basic.consume_ok'{}, State) ->
 %% while subscribing, message will be delivered by #amqp_msg
 handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	Message = <<"info: Hello, this is chat_srv! ">> ,
+	Message = Body ,
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = ToClientEx, routing_key = <<"chat.open">> },
 		#amqp_msg{payload = Message}),
