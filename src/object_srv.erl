@@ -69,8 +69,8 @@ handle_info(#'basic.consume_ok'{}, State) ->
 %% while subscribing, message will be delivered by #amqp_msg
 handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	BinMsg = [<<"info: Auto-reply, this is object_srv! your message is ">> , Body],
-%%	BinMsg = Body,
+	%%BinMsg = [<<"info: Auto-reply, this is object_srv! your message is ">> , Body],
+	BinMsg = Body,
 	BinRoutingKey = list_to_binary("object.map.all"),
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = ToClientEx, routing_key = BinRoutingKey },
