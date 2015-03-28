@@ -10,6 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([new_named_id/1]).
 -export([named_id/2]).
 -export([auto_increment/0]).
 -export([auto_increment/1]).
@@ -23,6 +24,9 @@
 %%
 %% APIs
 %%
+
+new_named_id(Name) when is_list(Name) ->
+	named_id(Name, auto_increment(Name)).
 
 %
 % named_id generates id like "npc921".

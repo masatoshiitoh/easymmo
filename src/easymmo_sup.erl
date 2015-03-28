@@ -27,6 +27,7 @@ init([]) ->
 	mq_watch(),
 	rutil(),
 	path_finder(),
+	emmo_auth(),
 	emmo_map(),
 	emmo_char(),
 	notifier(),
@@ -149,6 +150,19 @@ emmo_char_one(RiakIp, RiakPort) ->
 	Type = worker,
 	Modules = [emmo_char],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+emmo_auth() ->
+	emmo_auth_one("192.168.56.11", 8087).
+
+emmo_auth_one(RiakIp, RiakPort) ->
+	ID = emmo_auth,
+	StartFunc = {emmo_auth, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [emmo_auth],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 
 rutil() ->
 	rutil_one("192.168.56.11", 8087).
