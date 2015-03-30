@@ -10,6 +10,7 @@
 -export([init/1]).
 -export([handle_call/3]).
 
+-export([new_named_bin_id/1]).
 -export([new_named_id/1]).
 -export([named_id/2]).
 -export([auto_increment/0]).
@@ -24,6 +25,9 @@
 %%
 %% APIs
 %%
+
+new_named_bin_id(Name) when is_list(Name) ->
+	list_to_binary(new_named_id(Name)).
 
 new_named_id(Name) when is_list(Name) ->
 	named_id(Name, auto_increment(Name)).
