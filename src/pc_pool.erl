@@ -54,7 +54,7 @@ list_all() ->
 add() ->
 	Reply = gen_server:call(?MODULE, {add, auto_increment}).
 
-remove(NamedId) ->
+remove(NamedId) when is_list(NamedId) ->
 	Reply = gen_server:call(?MODULE, {remove, NamedId}).
 
 online(NamedId) ->
@@ -94,6 +94,15 @@ lookup_impl(Pid, NamedId) when is_list(NamedId)->
 lookup_impl(Pid, BinId) when is_binary(BinId) ->
 	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)).
+
+remove_impl(Pid, NamedId, Pcs) when is_list(NamedId) ->
+	NewPcs = lists:delete(NamedId , Pcs),
+	BinId = list_to_binary(NamedId),
+	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
+	emmo_map:remove(NamedId),
+	object_srv:del(NamedId),
+	{ok, NewPcs}.
+
 
 %%
 %% Behaviors
@@ -144,22 +153,10 @@ handle_call({remove_all}, From, State) ->
 	BinKeys),
 	{reply, Result, {Pid, []}};
 
-handle_call({remove, BinId}, From, State) when is_binary(BinId)->
-	{Pid, Pcs} = State,
-	NamedId = erlang:binary_to_list(BinId),
-	NewState = {Pid, lists:delete(NamedId , Pcs)},
-	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
-	emmo_map:remove(NamedId),
-	object_srv:del(NamedId),
-	{reply, {ok, NamedId}, NewState};
-
 handle_call({remove, NamedId}, From, State) when is_list(NamedId) ->
 	{Pid, Pcs} = State,
-	NewState = {Pid, lists:delete(NamedId , Pcs)},
-	BinId = erlang:list_to_binary(NamedId),
-	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
-	emmo_map:remove(NamedId),
-	object_srv:del(NamedId),
+	{ok, NewPcs} = remove_impl(Pid, NamedId, Pcs),
+	NewState = {Pid, NewPcs},
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({online, NamedId}, From, State) when is_list(NamedId) ->
@@ -202,7 +199,7 @@ handle_call({run, IntervalMSec}, From, State) ->
 
 			{ok, CurrentLocation} = emmo_map:lookup(X),
 
-			Step = {ok, nop},		%% TODO: set command handdler here
+			Step = {ok, nop},		%% TODO: set command handler here
 			case Step of
 				{ok, nop} -> nop;
 				_ -> io:format("unknown : [~p] ~p~n", [X, Step])
