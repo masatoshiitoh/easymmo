@@ -31,6 +31,7 @@ init([]) ->
 	emmo_map(),
 	emmo_char(),
 	notifier(),
+	pc_pool(),
 	npc_pool(),
 	npc_script(),
 	time_feeder(), 
@@ -101,6 +102,19 @@ notifier_one() ->
 	Type = worker,
 	Modules = [notifier],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+pc_pool() ->
+	pc_pool_one("192.168.56.11", 8087).
+
+pc_pool_one(RiakIp, RiakPort) ->
+	ID = pc_pool,
+	StartFunc = {pc_pool, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [pc_pool],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 
 npc_pool() ->
 	npc_pool_one("192.168.56.11", 8087).
