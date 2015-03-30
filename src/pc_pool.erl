@@ -37,8 +37,7 @@ test() ->
 	add(),
 	add(),
 	add(),
-	add(),
-	jsx:encode([{<<"library">>,<<"jsx">>},{<<"awesome">>,true}]).
+	add().
 
 reset() ->
 	pc_pool:remove_all(),
@@ -80,8 +79,8 @@ run(IntervalMSec) ->
 %% Utlities
 %%
 
-get_new_npc() ->
-	{ok, V} = emmo_char:new("npc"),
+get_new_pc() ->
+	{ok, V} = emmo_char:new("pc"),
 	V.
 
 get_new_location() ->
@@ -112,14 +111,14 @@ terminate(_Reason, State) ->
 	ok.
 
 handle_call({add, auto_increment}, From, State) ->
-	{Pid, Npcs} = State,
-	NamedId = rutil:named_id("npc", rutil:auto_increment("npc")),
+	{Pid, Pcs} = State,
+	NamedId = rutil:named_id("pc", rutil:auto_increment("pc")),
 	BinId = erlang:list_to_binary(NamedId),
-	NewNpc = get_new_npc(),
-	NewNpc2 = NewNpc#character{name  = "goba" ++ integer_to_list( random:uniform(10000))},
-	Obj1 = riakc_obj:new(?MyBucket, BinId, NewNpc2),
+	NewPc = get_new_pc(),
+	NewPc2 = NewPc#character{name  = "pc" ++ integer_to_list( random:uniform(10000))},
+	Obj1 = riakc_obj:new(?MyBucket, BinId, NewPc2),
 	riakc_pb_socket:put(Pid, Obj1),
-	NewState = {Pid, [NamedId | Npcs]},
+	NewState = {Pid, [NamedId | Pcs]},
 
 	NewLoc = get_new_location(), 
 	emmo_map:add(NamedId, NewLoc),
@@ -129,14 +128,14 @@ handle_call({add, auto_increment}, From, State) ->
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({list_all}, From, State) ->
-	{Pid, Npcs} = State,
+	{Pid, Pcs} = State,
 	Result = riakc_pb_socket:list_keys(Pid, ?MyBucket),
 	TextResult = rutil:keys_to_lists(Result),
 	{reply, TextResult, State};
 
 handle_call({remove_all}, From, State) ->
-	{Pid, Npcs} = State,
-	io:format("remove_all called -> Npcs = ~p~n", [Npcs]),
+	{Pid, Pcs} = State,
+	io:format("remove_all called -> Pcs = ~p~n", [Pcs]),
 	{ok, BinKeys} = riakc_pb_socket:list_keys(Pid, ?MyBucket),
 	Result = lists:foreach(fun(X) ->
 		riakc_pb_socket:delete(Pid, ?MyBucket, X),
@@ -146,17 +145,17 @@ handle_call({remove_all}, From, State) ->
 	{reply, Result, {Pid, []}};
 
 handle_call({remove, BinId}, From, State) when is_binary(BinId)->
-	{Pid, Npcs} = State,
+	{Pid, Pcs} = State,
 	NamedId = erlang:binary_to_list(BinId),
-	NewState = {Pid, lists:delete(NamedId , Npcs)},
+	NewState = {Pid, lists:delete(NamedId , Pcs)},
 	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
 	emmo_map:remove(NamedId),
 	object_srv:del(NamedId),
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({remove, NamedId}, From, State) when is_list(NamedId) ->
-	{Pid, Npcs} = State,
-	NewState = {Pid, lists:delete(NamedId , Npcs)},
+	{Pid, Pcs} = State,
+	NewState = {Pid, lists:delete(NamedId , Pcs)},
 	BinId = erlang:list_to_binary(NamedId),
 	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
 	emmo_map:remove(NamedId),
@@ -164,29 +163,29 @@ handle_call({remove, NamedId}, From, State) when is_list(NamedId) ->
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({online, NamedId}, From, State) when is_list(NamedId) ->
-	{Pid, Npcs} = State,
+	{Pid, Pcs} = State,
 	BinId = erlang:list_to_binary(NamedId),
 	{ok, _} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),	%% check if key existing "BinId"
-	NewState = {Pid, [NamedId | Npcs]},
+	NewState = {Pid, [NamedId | Pcs]},
 	{reply, ok, NewState};
 
 handle_call({offline, NamedId}, From, State) when is_list(NamedId) ->
-	{Pid, Npcs} = State,
-	NewState = {Pid, lists:delete(NamedId , Npcs)},
+	{Pid, Pcs} = State,
+	NewState = {Pid, lists:delete(NamedId , Pcs)},
 	{reply, {ok, NamedId}, NewState};
 
 handle_call({is_on, NamedId}, From, State) when is_list(NamedId) ->
-	{_, Npcs} = State,
-	{reply, {ok, lists:member(NamedId , Npcs)}, State};
+	{_, Pcs} = State,
+	{reply, {ok, lists:member(NamedId , Pcs)}, State};
 
 handle_call({lookup, NamedId}, From, State) when is_list(NamedId) ->
-	{Pid, Npcs} = State,
+	{Pid, Pcs} = State,
 	Val1 = lookup_impl(Pid, NamedId),
 	{reply, {ok, Val1}, State};
 
 handle_call({run, IntervalMSec}, From, State) ->
-	{Pid, Npcs} = State,
-	%% io:format("run Npcs : ~p~n", [Npcs]),
+	{Pid, Pcs} = State,
+	%% io:format("run Pcs : ~p~n", [Pcs]),
 	Val1 = lists:map(
 		fun(X) ->
 			BinId = erlang:list_to_binary(X),
@@ -194,8 +193,8 @@ handle_call({run, IntervalMSec}, From, State) ->
 			Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 
 			% Get current NPC data.
-			CurrentNpcData = lookup_impl(Pid, X),
-			%%io:format("CurrentNpc : ~p~n", [CurrentNpcData]),
+			CurrentPcData = lookup_impl(Pid, X),
+			%%io:format("CurrentPc : ~p~n", [CurrentPcData]),
 
 			% Get sensor data ( = now, this is get from map )
 			{ok, NearObjects} = emmo_map:get_near_objects(X),
@@ -203,35 +202,18 @@ handle_call({run, IntervalMSec}, From, State) ->
 
 			{ok, CurrentLocation} = emmo_map:lookup(X),
 
-			Step = npc_script:step(Val1 , CurrentLocation, CurrentNpcData, NearObjects),
+			Step = {ok, nop},		%% TODO: set command handdler here
 			case Step of
 				{ok, nop} -> nop;
-				{ok, {say_hello, NewId}} ->
-					NewComer = lookup_impl(Pid, NewId),
-					io:format("[~p] hello, ~p~n", [CurrentNpcData#character.name, NewComer#character.name]),
-					Msg = io_lib:format("hello, ~p", [NewComer#character.name]),
-					chat_srv:broadcast(X, Msg);
-				{ok, {say_goodbye, LeftId}} ->
-					%%NewComer = lookup_impl(Pid, LeftId),
-					io:format("[~p] bye~n", [CurrentNpcData#character.name]),
-					Msg = io_lib:format("bye ~p", [LeftId]),
-					chat_srv:broadcast(X, Msg);
-				{ok, {move, {rel, DeltaX, DeltaY}}} ->
-					NewX = CurrentLocation#loc.x + DeltaX,
-					NewY = CurrentLocation#loc.y + DeltaY,
-					NewLoc = CurrentLocation#loc{x = NewX, y = NewY},
-					emmo_map:move(X, NewLoc),
-					io:format("[~p] move rel ~p~n", [ CurrentNpcData#character.name, {DeltaX, DeltaY}]),
-					move_srv:move_rel(X, DeltaX, DeltaY);
 				_ -> io:format("unknown : [~p] ~p~n", [X, Step])
 			end,
 
-			%% Store latest NearObjects to CurrentNpcData
+			%% Store latest NearObjects to CurrentPcData
 			Memoried1 = Val1#character{near_objects = NearObjects, bye = []},
 			Updated1 = riakc_obj:update_value(Fetched1, Memoried1),
 			riakc_pb_socket:put(Pid, Updated1, [return_body])
 		end,
-		Npcs),
+		Pcs),
 	notifier:add(IntervalMSec, {mfa, pc_pool, run, [IntervalMSec]}),
 	{reply, {ok, Val1}, State}.
 
