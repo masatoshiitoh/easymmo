@@ -51,6 +51,27 @@ init(Args) ->
 
 	%%{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"#">>])}.
 
+% コネクションを作成する
+	{ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
+	{ok, Ch} = amqp_connection:open_channel(Connection),
+	amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
+	#'queue.declare_ok'{queue = Queue} =
+	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
+
+% キューを宣言する
+	[amqp_channel:call(Ch, #'queue.bind'{
+		exchange = Exchange,
+		routing_key = BindingKey,
+		queue = Queue})
+	|| BindingKey <- TopicList],
+	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+
+% QOSを指定する
+% コンシューマーを作成する
+% 受信待ち。(infoがとんでくるので、erlang クライアントではループに入らない）
+
+
+
 % 
 % // RPC Server code
 % var factory = new ConnectionFactory() { HostName = "localhost" };
