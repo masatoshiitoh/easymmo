@@ -19,57 +19,39 @@ start_link(ServerIp, ListenEx) ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [ServerIp, ListenEx], []).
 
 init(Args) ->
-	[ServerIp, ListenEx] = Args,
+	[ServerIp, Exchange] = Args,
 
-	%% {ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>, <<"move.#">>])}.
-	
-	%%{Connection, ChTC, ChFC} = setup_topic(ServerIp, ToClientEx, FromClientEx, ReceiveTopicList),
-	%%{ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}}.
-
-    %%%{ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
-	%%ChTC = setup_emit_topics(Connection, ToClientEx),
-	%%ChFC = setup_receive_topics(Connection, FromClientEx, ReceiveTopicList),
-	%%{Connection, ChTC, ChFC}.
-
-%%setup_receive_topics(Connection, Exchange, TopicList) ->
-%%    {ok, Ch} = amqp_connection:open_channel(Connection),
-%%    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
-%%	#'queue.declare_ok'{queue = Queue} =
-%%	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
-%%	[amqp_channel:call(Ch, #'queue.bind'{
-%%		exchange = Exchange,
-%%		routing_key = BindingKey,
-%%		queue = Queue})
-%%	|| BindingKey <- TopicList],
-%%	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
-%%	Ch.
-%%
-%%
-	
 	%% Setup connection
-	%%
 
-	%%{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"#">>])}.
-
-% コネクションを作成する
 	{ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
-	{ok, Ch} = amqp_connection:open_channel(Connection),
-	amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
-	#'queue.declare_ok'{queue = Queue} =
-	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
 
-% キューを宣言する
-	[amqp_channel:call(Ch, #'queue.bind'{
-		exchange = Exchange,
-		routing_key = BindingKey,
-		queue = Queue})
-	|| BindingKey <- TopicList],
+	%% channel open
+
+	{ok, Ch} = amqp_connection:open_channel(Connection),
+
+	%% declare exchange
+
+	amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, auto_delete = true}),
+	#'queue.declare_ok'{queue = Queue} = amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
+
+	%% subscribe queue
+
 	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+	{ServerIp, Exchange, Connection, Ch}.
 
 % QOSを指定する
+%% amqp_channel:call(Channel, #'basic.qos'{prefetch_count = Prefetch})
 % コンシューマーを作成する
 % 受信待ち。(infoがとんでくるので、erlang クライアントではループに入らない）
+% おしまい。
 
+
+
+shutdown_by_state(State) ->
+	{ServerIp, Exchange, Connection, Ch} = State,.
+    ok = amqp_channel:close(Ch),
+    ok = amqp_connection:close(Connection),
+	ok.
 
 
 % 
