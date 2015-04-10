@@ -104,7 +104,7 @@ handle_call({login, Uid, Pass}, From, State) ->
 	Data = impl_lookup(Pid, BinPKey),
 	io:format("login lookup: ~p~n", [Data]),
 	case Data#auth.pass =:= Pass of
-		true -> {reply, {ok, token_here }, State};	%% TODO: set valid token here.
+		true -> {reply, {ok, cid_here, token_here }, State};	%% TODO: set valid character_id and token here.
 		_ -> {reply, error, State}
 	end;
 
