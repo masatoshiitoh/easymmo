@@ -1,8 +1,6 @@
 -module(user_test).
 
-
 -export([test/0]).
-
 
 test() ->
 	{ok, UID, TOKEN1} = login("ichiro", "1111"),
@@ -17,8 +15,10 @@ test() ->
 	
 login(Id, Pass) ->
 	case emmo_auth:login(Id,Pass) of
-		{ok, Cid, Token} -> {ok, Cid, Token};
-		error -> error
+		{ok, Cid, Token} ->
+			{ok, Cid, Token};
+		error ->
+			error
 	end.
 
 online(UID, TOKEN1) ->
