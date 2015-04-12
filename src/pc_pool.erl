@@ -18,14 +18,19 @@
 -export([remove_all/0]).
 -export([add/0]).
 -export([remove/1]).
--export([online/1]).
+-export([online/2]).
 -export([offline/1]).
 -export([is_on/1]).
 -export([lookup/1]).
 -export([run/0]).
 -export([run/1]).
+-export([get_token/1]).
+-export([token_new_impl/2]).
 
--define(MyBucket, <<"characters">>).
+-define(CharacterBucket, <<"characters">>).
+-define(TokenBucket, <<"ch_tokens">>).
+
+-define(BYTES_OF_TOKEN, 8).
 
 %%
 %% APIs
@@ -43,7 +48,9 @@ reset() ->
 	pc_pool:remove_all(),
 	emmo_map:remove_all(),
 	pc_pool:run().
-
+	
+get_token(Id) ->
+	Reply = gen_server:call(?MODULE, {get_token, Id}).
 
 remove_all() ->
 	Reply = gen_server:call(?MODULE, {remove_all}).
@@ -57,8 +64,8 @@ add() ->
 remove(NamedId) when is_list(NamedId) ->
 	Reply = gen_server:call(?MODULE, {remove, NamedId}).
 
-online(NamedId) ->
-	Reply = gen_server:call(?MODULE, {online, NamedId}).
+online(NamedId, Token) ->
+	Reply = gen_server:call(?MODULE, {online, NamedId, Token}).
 
 offline(NamedId) ->
 	Reply = gen_server:call(?MODULE, {offline, NamedId}).
@@ -92,17 +99,35 @@ lookup_impl(Pid, NamedId) when is_list(NamedId)->
 	lookup_impl(Pid, BinId);
 
 lookup_impl(Pid, BinId) when is_binary(BinId) ->
-	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?CharacterBucket, BinId),
 	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)).
 
 remove_impl(Pid, NamedId, Pcs) when is_list(NamedId) ->
 	NewPcs = lists:delete(NamedId , Pcs),
 	BinId = list_to_binary(NamedId),
-	riakc_pb_socket:delete(Pid, ?MyBucket, BinId),
+	riakc_pb_socket:delete(Pid, ?CharacterBucket, BinId),
 	emmo_map:remove(NamedId),
 	object_srv:del(NamedId),
 	{ok, NewPcs}.
 
+gen_token() -> crypto:rand_bytes(?BYTES_OF_TOKEN).
+
+token_equal_impl(Pid, NamedId, Token) ->
+	BinId = list_to_binary(NamedId),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?CharacterBucket, BinId),
+	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)).
+
+token_new_impl(Pid, NamedId) ->
+	BinId = erlang:list_to_binary(NamedId),
+	BinNewToken = gen_token(),
+	Obj1 = riakc_obj:new(?TokenBucket,BinId, BinNewToken),
+	riakc_pb_socket:put(Pid, Obj1),
+	{ok, NamedId, BinNewToken}.
+
+token_update_impl(Pid, NamedId, OldToken, NewToken) ->
+	BinId = list_to_binary(NamedId),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?CharacterBucket, BinId),
+	Val1 = binary_to_term(riakc_obj:get_value(Fetched1)).
 
 %%
 %% Behaviors
@@ -119,35 +144,40 @@ init(Args) ->
 terminate(_Reason, State) ->
 	ok.
 
+handle_call({get_token, Id}, From, State) when is_list(Id) ->
+	{Pid, Pcs} = State,
+	{ok, Id, BinNewToken} = token_new_impl(Pid, Id),
+	{reply, {ok, Id, BinNewToken}, State};
+
 handle_call({add, auto_increment}, From, State) ->
 	{Pid, Pcs} = State,
-	NamedId = rutil:named_id("pc", rutil:auto_increment("pc")),
-	BinId = erlang:list_to_binary(NamedId),
+	Cid = rutil:named_id("pc", rutil:auto_increment("pc")),
+	BinId = erlang:list_to_binary(Cid),
 	NewPc = get_new_pc(),
 	NewPc2 = NewPc#character{name  = "pc" ++ integer_to_list( random:uniform(10000))},
-	Obj1 = riakc_obj:new(?MyBucket, BinId, NewPc2),
+	Obj1 = riakc_obj:new(?CharacterBucket, BinId, NewPc2),
 	riakc_pb_socket:put(Pid, Obj1),
-	NewState = {Pid, [NamedId | Pcs]},
+	NewState = {Pid, [Cid | Pcs]},
 
 	NewLoc = get_new_location(), 
-	emmo_map:add(NamedId, NewLoc),
+	emmo_map:add(Cid, NewLoc),
 
-	object_srv:add(NamedId),
+	object_srv:add(Cid),
 
-	{reply, {ok, NamedId}, NewState};
+	{reply, {ok, Cid}, NewState};
 
 handle_call({list_all}, From, State) ->
 	{Pid, Pcs} = State,
-	Result = riakc_pb_socket:list_keys(Pid, ?MyBucket),
+	Result = riakc_pb_socket:list_keys(Pid, ?CharacterBucket),
 	TextResult = rutil:keys_to_lists(Result),
 	{reply, TextResult, State};
 
 handle_call({remove_all}, From, State) ->
 	{Pid, Pcs} = State,
 	io:format("remove_all called -> Pcs = ~p~n", [Pcs]),
-	{ok, BinKeys} = riakc_pb_socket:list_keys(Pid, ?MyBucket),
+	{ok, BinKeys} = riakc_pb_socket:list_keys(Pid, ?CharacterBucket),
 	Result = lists:foreach(fun(X) ->
-		riakc_pb_socket:delete(Pid, ?MyBucket, X),
+		riakc_pb_socket:delete(Pid, ?CharacterBucket, X),
 		emmo_map:remove(X)
 		end,
 	BinKeys),
@@ -159,12 +189,16 @@ handle_call({remove, NamedId}, From, State) when is_list(NamedId) ->
 	NewState = {Pid, NewPcs},
 	{reply, {ok, NamedId}, NewState};
 
-handle_call({online, NamedId}, From, State) when is_list(NamedId) ->
+handle_call({online, NamedId, Token}, From, State) when is_list(NamedId) ->
 	{Pid, Pcs} = State,
 	BinId = erlang:list_to_binary(NamedId),
-	{ok, _} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),	%% check if key existing "BinId"
-	NewState = {Pid, [NamedId | Pcs]},
-	{reply, ok, NewState};
+	case riakc_pb_socket:get(Pid, ?CharacterBucket, BinId) of
+		{ok, _} ->
+			NewState = {Pid, [NamedId | Pcs]},
+			{reply, ok, NewState};
+		{error, notfound} ->
+			{reply, error, State}
+	end;
 
 handle_call({offline, NamedId}, From, State) when is_list(NamedId) ->
 	{Pid, Pcs} = State,
@@ -186,7 +220,7 @@ handle_call({run, IntervalMSec}, From, State) ->
 	Val1 = lists:map(
 		fun(X) ->
 			BinId = erlang:list_to_binary(X),
-			{ok, Fetched1} = riakc_pb_socket:get(Pid, ?MyBucket, BinId),
+			{ok, Fetched1} = riakc_pb_socket:get(Pid, ?CharacterBucket, BinId),
 			Val1 = binary_to_term(riakc_obj:get_value(Fetched1)),
 
 			% Get current NPC data.

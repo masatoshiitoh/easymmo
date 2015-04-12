@@ -21,6 +21,7 @@
 -export([test/0]).
 
 -define(AuthBucket, <<"auth">>).
+-define(UTokenBucket, <<"auth_token">>).
 
 %%
 %% APIs
@@ -90,7 +91,7 @@ handle_call({del, V}, From, State) when is_record(V, auth) ->
 	Pid = State,
 	Uid = V#auth.uid,
 	BinPKey = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
-	Data = impl_lookup(Pid, BinPKey),
+	Data = impl_fetch(Pid, BinPKey),
 	case Data#auth.pass =:= V#auth.pass of
 		true -> riakc_pb_socket:delete(Pid, ?AuthBucket, BinPKey)
 	end,
@@ -99,12 +100,26 @@ handle_call({del, V}, From, State) when is_record(V, auth) ->
 
 handle_call({login, Uid, Pass}, From, State) ->
 	Pid = State,
-	BinPKey = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
+	[BinPKey|_] = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
 	io:format("login : ~p~n", [BinPKey]),
-	Data = impl_lookup(Pid, BinPKey),
+	Data = impl_fetch(Pid, BinPKey),
 	io:format("login lookup: ~p~n", [Data]),
+	Cid = binary_to_list(BinPKey),
+	{ok, Cid, Token} = pc_pool:token_new_impl(Pid, Cid),
 	case Data#auth.pass =:= Pass of
-		true -> {reply, {ok, cid_here, token_here }, State};	%% TODO: set valid character_id and token here.
+		true -> {reply, {ok, Cid, Token }, State};
+		_ -> {reply, error, State}
+	end;
+
+
+handle_call({logout, Uid, Token}, From, State) ->
+	Pid = State,
+	[BinPKey|_] = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
+	Data = impl_fetch(Pid, BinPKey),
+	Cid = binary_to_list(BinPKey),
+	{ok, Cid, Token} = pc_pool:token_new_impl(Pid, Cid),
+	case Data#auth.pass =:= Pass of
+		true -> {reply, {ok, Cid, Token }, State};
 		_ -> {reply, error, State}
 	end;
 
@@ -117,8 +132,6 @@ handle_call({remove_all}, From, State) ->
 		end,
 	BinKeys),
 	{reply, Result, Pid};
-
-
 
 
 handle_call({update, Id, NewV}, From, State) when is_list(Id) ->
@@ -135,7 +148,7 @@ handle_call({update, Id, NewV}, From, State) when is_list(Id) ->
 
 handle_call({lookup, Id}, From, State) when is_list(Id) ->
 	Pid = State,
-	Val1 = impl_lookup(Pid, Id),
+	Val1 = impl_fetch(Pid, Id),
 	{reply, {ok, Val1}, State};
 
 handle_call({lookup_with_integer, Attr, K}, From, State) ->
@@ -145,11 +158,11 @@ handle_call({lookup_with_integer, Attr, K}, From, State) ->
 	{reply, {ok, TextVal}, State}.
 
 
-impl_lookup(Pid, Id) when is_list(Id) ->
+impl_fetch(Pid, Id) when is_list(Id) ->
 	BinId = erlang:list_to_binary(Id),
-	impl_lookup(Pid, BinId);
+	impl_fetch(Pid, BinId);
 
-impl_lookup(Pid, BinId) when is_binary(BinId)->
+impl_fetch(Pid, BinId) when is_binary(BinId)->
 	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?AuthBucket, BinId),
 	Val = binary_to_term(riakc_obj:get_value(Fetched1)).
 
@@ -161,4 +174,43 @@ impl_lookup_with_binary(Pid, Attr, Key) when is_binary(Key) ->
 	{ok, {index_results_v1, L, _,_}} = riakc_pb_socket:get_index_eq(Pid, ?AuthBucket,{binary_index, Attr}, Key),
 	L.
 
+
+
+
+impl_check_is_online(Pid, Id, Token) when is_list(Id) ->
+	BinId = erlang:list_to_binary(Id),
+	impl_check_is_online(Pid, BinId);
+
+impl_check_is_online(Pid, BinId, Token) when is_binary(BinId) ->
+	case riakc_pb_socket:get(Pid, ?UTokenBucket, BinId) of
+		{ok, Fetched1} -> true;
+		{error, notfound} -> false
+	end.
+
+
+impl_online(Pid, Id, Token) when is_list(Id) ->
+	BinId = erlang:list_to_binary(Id),
+	impl_online(Pid, BinId);
+
+impl_online(Pid, BinId, Token) when is_binary(BinId) ->
+	case impl_check_is_online(Pid, Id, Token) of
+	true ->
+		Token = gen_token(),
+		Obj1 = riakc_obj:new(?UTokenBucket, BinId, Token),
+		riakc_pb_socket:put(Pid, Obj1),
+		ok.
+	false ->
+		0
+	end.
+
+
+impl_offline(Pid, Id, Token) when is_list(Id) ->
+	BinId = erlang:list_to_binary(Id),
+	impl_offline(Pid, BinId);
+
+impl_offline(Pid, BinId, Token) when is_binary(Id) ->
+	0.
+
+
+gen_token() -> crypto:rand_bytes(?BYTES_OF_TOKEN).
 
