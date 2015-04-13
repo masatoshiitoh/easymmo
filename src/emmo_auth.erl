@@ -23,6 +23,8 @@
 -define(AuthBucket, <<"auth">>).
 -define(UTokenBucket, <<"auth_token">>).
 
+-define(BYTES_OF_TOKEN, 8).
+
 %%
 %% APIs
 %%
@@ -112,14 +114,11 @@ handle_call({login, Uid, Pass}, From, State) ->
 	end;
 
 
-handle_call({logout, Uid, Token}, From, State) ->
+handle_call({logout, PKey, Token}, From, State) ->
 	Pid = State,
-	[BinPKey|_] = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
-	Data = impl_fetch(Pid, BinPKey),
-	Cid = binary_to_list(BinPKey),
-	{ok, Cid, Token} = pc_pool:token_new_impl(Pid, Cid),
-	case Data#auth.pass =:= Pass of
-		true -> {reply, {ok, Cid, Token }, State};
+	Data = impl_fetch(Pid, PKey),
+	case Data#auth.token =:= Token of
+		true -> {reply, {ok, PKey, Token }, State};
 		_ -> {reply, error, State}
 	end;
 
@@ -179,7 +178,7 @@ impl_lookup_with_binary(Pid, Attr, Key) when is_binary(Key) ->
 
 impl_check_is_online(Pid, Id, Token) when is_list(Id) ->
 	BinId = erlang:list_to_binary(Id),
-	impl_check_is_online(Pid, BinId);
+	impl_check_is_online(Pid, BinId, Token);
 
 impl_check_is_online(Pid, BinId, Token) when is_binary(BinId) ->
 	case riakc_pb_socket:get(Pid, ?UTokenBucket, BinId) of
@@ -190,15 +189,15 @@ impl_check_is_online(Pid, BinId, Token) when is_binary(BinId) ->
 
 impl_online(Pid, Id, Token) when is_list(Id) ->
 	BinId = erlang:list_to_binary(Id),
-	impl_online(Pid, BinId);
+	impl_online(Pid, BinId, Token);
 
 impl_online(Pid, BinId, Token) when is_binary(BinId) ->
-	case impl_check_is_online(Pid, Id, Token) of
+	case impl_check_is_online(Pid, BinId, Token) of
 	true ->
 		Token = gen_token(),
 		Obj1 = riakc_obj:new(?UTokenBucket, BinId, Token),
 		riakc_pb_socket:put(Pid, Obj1),
-		ok.
+		ok;
 	false ->
 		0
 	end.
@@ -206,9 +205,9 @@ impl_online(Pid, BinId, Token) when is_binary(BinId) ->
 
 impl_offline(Pid, Id, Token) when is_list(Id) ->
 	BinId = erlang:list_to_binary(Id),
-	impl_offline(Pid, BinId);
+	impl_offline(Pid, BinId, Token);
 
-impl_offline(Pid, BinId, Token) when is_binary(Id) ->
+impl_offline(Pid, BinId, Token) when is_binary(BinId) ->
 	0.
 
 
