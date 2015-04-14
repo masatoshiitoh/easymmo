@@ -14,8 +14,10 @@
 
 ctest() ->
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
-	Pid = amqp_rpc_client:start_link(Connection, <<"authrpc">>),
-	amqp_rpc_client:call(Pid, "ctest calls!"),
+	io:format("connection ok~n",[]),
+	Pid = amqp_rpc_client:start(Connection, <<"authrpc">>),
+	io:format("start link ok, ~p~n",[Pid]),
+	io:format("call return ~p~n",[ amqp_rpc_client:call(Pid, <<"ctest calls!">>) ]),
 	amqp_rpc_client:stop(Pid),
 	ok.
 	
@@ -28,12 +30,11 @@ start_link(ServerIp, AuthQueue) ->
 
 init(Args) ->
 	[ServerIp, AuthQueue] = Args,
-	%% make connection
-	%% make queue
-	%% start amqp_rpc_server with start_link/3
-
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
-    Pid = amqp_rpc_server:start_link(Connection, AuthQueue, fun(X) -> io:format("received rpc request with ~p~n", [X]) end),
+    Pid = amqp_rpc_server:start_link(Connection, AuthQueue,
+		fun(X) ->
+			list_to_binary(io_lib:format("received rpc request with ~p", [binary_to_list(X)]))
+			end),
 
 	State = [Pid],
 	{ok, State}.
