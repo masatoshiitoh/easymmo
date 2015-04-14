@@ -6,33 +6,41 @@
 -module(auth_srv).
 -include_lib("amqp_client.hrl").
 
--export([start_link/3]).
+-export([start_link/2]).
 -export([terminate/2]).
 -export([init/1]).
--export([handle_info/2]).
--export([handle_call/3]).
+
+-export([ctest/0]).
+
+ctest() ->
+    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
+	Pid = amqp_rpc_client:start_link(Connection, <<"authrpc">>),
+	amqp_rpc_client:call(Pid, "ctest calls!"),
+	amqp_rpc_client:stop(Pid),
+	ok.
+	
 
 %%
 %% Behaviors
 %%
-start_link(ServerIp, ToClientEx, FromClientEx) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [ServerIp, ToClientEx, FromClientEx], []).
+start_link(ServerIp, AuthQueue) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [ServerIp, AuthQueue], []).
 
 init(Args) ->
-	Params = [ServerIp, ToClientEx, FromClientEx] = Args,
+	[ServerIp, AuthQueue] = Args,
 	%% make connection
 	%% make queue
 	%% start amqp_rpc_server with start_link/3
 
-	{ok, Params}.
+    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
+    Pid = amqp_rpc_server:start_link(Connection, AuthQueue, fun(X) -> io:format("received rpc request with ~p~n", [X]) end),
+
+	State = [Pid],
+	{ok, State}.
 
 terminate(_Reason, State) ->
-	%% stop amqp_rpc_server with stop/1
+	[Pid] = State,
+	amqp_rpc_server:stop(Pid),
 	ok.
 
-handle_info(_, State) ->
-	{noreply, State}.
-
-handle_call(_, From, State) ->
-	{reply, ok, State}.
 
