@@ -21,6 +21,25 @@ ctest() ->
 	amqp_rpc_client:stop(Pid),
 	ok.
 	
+%%
+%% ID/Pass check and other works.
+%%
+
+logout(LoginId, Token) ->
+	discard_token(LoginId,Token).
+
+id_pass_check(LoginId, Pass) when is_list(LoginId), is_list(Pass) ->
+	0.
+
+new_token(LoginId) ->
+	0.
+
+update_token(LoginId, Token) ->
+	0.
+
+discard_token(LoginId, Token) ->
+	0.
+
 
 %%
 %% Behaviors
