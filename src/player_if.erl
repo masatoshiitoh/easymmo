@@ -1,6 +1,7 @@
 %%
 %% player_if.erl
 %%
+%% this module communicates players unity client via AMQP (rabbitmq client) with JSON.
 %%
 
 -module(player_if).
@@ -16,8 +17,20 @@
 %%
 %% APIs
 %%
-broadcast(Id, Payload) ->
-	Reply = gen_server:call(?MODULE, {broadcast, Id, Payload}).
+
+%% client to server
+impl_login(Id, password) -> 0.
+impl_logout(Id, password) -> 0.
+impl_online(Id, password) -> 0.
+impl_offline(Id, password) -> 0.
+impl_chat_open(Id, password) -> 0.
+impl_move_rel(Id, password) -> 0.
+
+%% server to client
+
+%% setup message distribution to the user.
+impl_notify_world_stats() -> 0.
+
 
 %%
 %% Behaviors
