@@ -12,7 +12,6 @@
 -export([init/1]).
 -export([handle_info/2]).
 -export([handle_call/3]).
--export([broadcast/2]).
 
 %%
 %% APIs
