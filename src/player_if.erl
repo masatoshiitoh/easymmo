@@ -41,7 +41,7 @@ impl_new_account(Id, Password) ->
 	{token, Token, Expire} = token_srv:new(Uid),
 	{new_account, Uid, Token, Expire}.
 
-impl_login(Id, Password)
+%% impl_login(Id, Password)
 
 %%
 %% Behaviors
