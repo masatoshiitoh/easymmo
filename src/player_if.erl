@@ -19,6 +19,7 @@
 %%
 
 %% client to server
+new_account(Id, Password) -> impl_new_account(Id, Password).
 impl_login(Id, password) -> 0.
 impl_logout(Id, password) -> 0.
 impl_online(Id, password) -> 0.
@@ -28,9 +29,20 @@ impl_move_rel(Id, password) -> 0.
 
 %% server to client
 
-%% setup message distribution to the user.
-impl_notify_world_stats() -> 0.
+impl_notify_world_stats() -> 0.		%% setup message distribution to the user.
 
+
+
+%%
+%% Implements
+%%
+
+impl_new_account(Id, Password) ->
+	{auth, Result, Uid} = auth_srv:new(Id, Password),
+	{token, Token, Expire} = token_srv:new(Uid),
+	{new_account, Uid, Token, Expire}.
+
+impl_login(Id, Password)
 
 %%
 %% Behaviors
