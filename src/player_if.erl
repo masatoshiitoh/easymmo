@@ -19,8 +19,9 @@
 
 %% client to server
 new_account(Id, Password) -> impl_new_account(Id, Password).
-impl_login(Id, password) -> 0.
-impl_logout(Id, password) -> 0.
+login(Id, Password) -> impl_login(Id, Password).
+logout(Token) -> impl_logout(Token).
+
 impl_online(Id, password) -> 0.
 impl_offline(Id, password) -> 0.
 impl_chat_open(Id, password) -> 0.
@@ -41,7 +42,16 @@ impl_new_account(Id, Password) ->
 	{token, Token, Expire} = token_srv:new(Uid),
 	{new_account, Uid, Token, Expire}.
 
-%% impl_login(Id, Password)
+impl_login(Id, Password) ->
+	{auth, Result, Uid} = auth_srv:lookup(Id, Password),
+	{token, Token, Expire} = token_srv:new(Uid),
+	{login, Uid, Token, Expire}.
+
+impl_logout(Token) ->
+	{auth, ok} = auth_srv:record_logout(Token),
+	{token, ok} = token_srv:invalidate(Token),
+	{logout, ok}.
+
 
 %%
 %% Behaviors

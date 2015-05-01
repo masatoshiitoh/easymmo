@@ -25,21 +25,17 @@ ctest() ->
 %% ID/Pass check and other works.
 %%
 
-logout(LoginId, Token) ->
-	discard_token(LoginId,Token).
+new(LoginId, Password) ->
+	%% call RPC
+	{auth, ng, uid}.
 
-id_pass_check(LoginId, Pass) when is_list(LoginId), is_list(Pass) ->
-	0.
+lookup(LoginId, Token) ->
+	%% call RPC
+	{auth, ng, uid}.
 
-new_token(LoginId) ->
-	0.
-
-update_token(LoginId, Token) ->
-	0.
-
-discard_token(LoginId, Token) ->
-	0.
-
+record_logout(LoginId, Pass) ->
+	%% call RPC
+	{auth, ng}.
 
 %%
 %% Behaviors
