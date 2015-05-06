@@ -38,7 +38,8 @@ init([]) ->
 	chat_srv(),
 	move_srv(),
 	object_srv(),
-	player_if()
+	emmo_auth()
+%%	player_if()
 	],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
@@ -68,11 +69,11 @@ time_feeder_one(IpAddr, ToClientEx) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 auth_srv() ->
-	auth_srv_one("192.168.56.21", <<"authrpc">> ).
+	auth_srv_one("192.168.56.11", 8087).
 
-auth_srv_one(ServerIp, AuthQueue) ->
+auth_srv_one(RiakIp, RiakPort) ->
 	ID = auth_srv,
-	StartFunc = {auth_srv, start_link, [ServerIp, AuthQueue]},
+	StartFunc = {auth_srv, start_link, [RiakIp, RiakPort]},
 	Restart = permanent,
 	Shutdown = brutal_kill,
 	Type = worker,

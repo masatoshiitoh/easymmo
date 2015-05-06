@@ -28,25 +28,39 @@ ctest() ->
 %% APIs
 %%
 
+%%
 %% client to server
+%% this is for direct call test.
+%%
 new_account(Id, Password) -> impl_new_account(Id, Password).
 login(Id, Password) -> impl_login(Id, Password).
 logout(Token) -> impl_logout(Token).
-
-impl_online(Id, password) -> 0.
-impl_offline(Id, password) -> 0.
-impl_chat_open(Id, password) -> 0.
-impl_move_rel(Id, password) -> 0.
-
-%% server to client
-
-impl_notify_world_stats() -> 0.		%% setup message distribution to the user.
+online(Token) -> 0.
+offline(Token) -> 0.
 
 
 %%
-%% Echo - default service for RPC
+%% RPC implements
 %%
+
+get_default_rpcs() -> [
+	{"echo",		{?MODULE, rpc_echo}},
+	{"new_account",	{?MODULE, rpc_make_new_account}},
+	{"login",		{?MODULE, rpc_login}},
+	{"logout",		{?MODULE, rpc_logout}},
+	{"check_token",	{?MODULE, rpc_check_token}},
+	{"online",		{?MODULE, rpc_online}},
+	{"offline",		{?MODULE, rpc_offline}}
+].
+
 rpc_echo(X) -> X.
+
+rpc_make_new_account(LoginId, Password) -> ng.
+rpc_login(LoginId, Password) -> ng.
+rpc_logout(Token) -> ng.
+rpc_check_token(Token) -> ng.
+rpc_online(Token) -> ng.
+rpc_offline(Token) -> ng.
 
 
 
@@ -91,11 +105,8 @@ init(Args) ->
 		= bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>]),
 
 	%% setup RPC listeners
-	RpcPids =
-		[
-			[Pid] = amqp_rpc_server:start_link(Connection, QueueName, fun(A) -> apply(M, F, A) end)
-				|| {QueueName, {M, F}} <- ListOfRpcEntries
-		],
+	RpcPids = [ [Pid] = amqp_rpc_server:start_link(Connection, QueueName, fun(A) -> apply(M, F, A) end)
+		|| {QueueName, {M, F}} <- ListOfRpcEntries ],
 
 	{ok, {ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}, RpcPids}}.
 
