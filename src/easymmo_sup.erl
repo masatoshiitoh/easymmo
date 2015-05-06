@@ -27,7 +27,6 @@ init([]) ->
 	mq_watch(),
 	rutil(),
 	path_finder(),
-	emmo_auth(),
 	emmo_map(),
 	emmo_char(),
 	notifier(),
@@ -38,9 +37,23 @@ init([]) ->
 	auth_srv(),
 	chat_srv(),
 	move_srv(),
-	object_srv()
+	object_srv(),
+	player_if()
 	],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
+
+player_if() ->
+	player_if_one("192.168.56.21", <<"xout">>, <<"xin">>, [{"echo", {auth_srv, rpc_echo}}] ).
+
+player_if_one(ServerIp, ToClientEx, FromClientEx, RpcLists) ->
+	ID = player_if,
+	StartFunc = {player_if, start_link, [ServerIp, ToClientEx, FromClientEx, RpcLists]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [player_if],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 
 time_feeder() ->
 	time_feeder_one("192.168.56.21", <<"time">> ).
