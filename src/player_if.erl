@@ -18,10 +18,12 @@
 ctest() ->
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
 	io:format("connection ok~n",[]),
+
 	Pid = amqp_rpc_client:start(Connection, <<"echo">>),
 	io:format("start link ok, ~p~n",[Pid]),
 	io:format("call returned with '~p'~n",[ amqp_rpc_client:call(Pid, <<"ctest calls!">>) ]),
 	amqp_rpc_client:stop(Pid),
+
 	ok.
 	
 %%
