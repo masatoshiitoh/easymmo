@@ -39,16 +39,17 @@ init([]) ->
 	move_srv(),
 	object_srv(),
 	emmo_auth()
-%%	player_if()
+	,
+	player_if()
 	],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
 player_if() ->
-	player_if_one("192.168.56.21", <<"xout">>, <<"xin">>, [{"echo", {auth_srv, rpc_echo}}] ).
+	player_if_one("192.168.56.21", <<"xout">>, <<"xin">> ).
 
-player_if_one(ServerIp, ToClientEx, FromClientEx, RpcLists) ->
+player_if_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = player_if,
-	StartFunc = {player_if, start_link, [ServerIp, ToClientEx, FromClientEx, RpcLists]},
+	StartFunc = {player_if, start_link, [ServerIp, ToClientEx, FromClientEx]},
 	Restart = permanent,
 	Shutdown = brutal_kill,
 	Type = worker,

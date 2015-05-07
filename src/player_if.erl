@@ -18,9 +18,9 @@
 ctest() ->
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
 	io:format("connection ok~n",[]),
-	Pid = amqp_rpc_client:start(Connection, <<"authrpc">>),
+	Pid = amqp_rpc_client:start(Connection, <<"echo">>),
 	io:format("start link ok, ~p~n",[Pid]),
-	io:format("call return ~p~n",[ amqp_rpc_client:call(Pid, <<"ctest calls!">>) ]),
+	io:format("call returned with '~p'~n",[ amqp_rpc_client:call(Pid, <<"ctest calls!">>) ]),
 	amqp_rpc_client:stop(Pid),
 	ok.
 	
@@ -35,6 +35,7 @@ ctest() ->
 new_account(Id, Password) -> impl_new_account(Id, Password).
 login(Id, Password) -> impl_login(Id, Password).
 logout(Token) -> impl_logout(Token).
+check_token(Token) -> impl_logout(Token).
 online(Token) -> 0.
 offline(Token) -> 0.
 
@@ -44,13 +45,13 @@ offline(Token) -> 0.
 %%
 
 get_default_rpcs() -> [
-	{"echo",		{?MODULE, rpc_echo}},
-	{"new_account",	{?MODULE, rpc_make_new_account}},
-	{"login",		{?MODULE, rpc_login}},
-	{"logout",		{?MODULE, rpc_logout}},
-	{"check_token",	{?MODULE, rpc_check_token}},
-	{"online",		{?MODULE, rpc_online}},
-	{"offline",		{?MODULE, rpc_offline}}
+	{<<"echo">>,		{?MODULE, rpc_echo}},
+	{<<"new_account">>,	{?MODULE, rpc_make_new_account}},
+	{<<"login">>,		{?MODULE, rpc_login}},
+	{<<"logout">>,		{?MODULE, rpc_logout}},
+	{<<"check_token">>,	{?MODULE, rpc_check_token}},
+	{<<"online">>,		{?MODULE, rpc_online}},
+	{<<"offline">>,		{?MODULE, rpc_offline}}
 ].
 
 rpc_echo(X) -> X.
@@ -83,6 +84,9 @@ impl_logout(Token) ->
 	{token, ok} = token_srv:invalidate(Token),
 	{logout, ok}.
 
+impl_check_token(Token) ->
+	{token, ok} = token_srv:lookup(Token),
+	{logout, ok}.
 
 %%
 %% Behaviors
@@ -96,7 +100,7 @@ start_link(ServerIp, ToClientEx, FromClientEx) ->
 %% "rpcname" is list, this is queue name for its rpc entry.
 %%
 init(Args) ->
-	[ServerIp, ToClientEx, FromClientEx, ListOfRpcEntries] = Args,
+	[ServerIp, ToClientEx, FromClientEx] = Args,
 
 	%% setup topic receiver
 	%% now, this just listens ONLY chat.# topic.
@@ -105,8 +109,9 @@ init(Args) ->
 		= bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>]),
 
 	%% setup RPC listeners
-	RpcPids = [ [Pid] = amqp_rpc_server:start_link(Connection, QueueName, fun(A) -> apply(M, F, A) end)
-		|| {QueueName, {M, F}} <- ListOfRpcEntries ],
+	RpcPids1 = [amqp_rpc_server:start_link(Connection, QueueName, fun(A) -> apply(M, F, A) end)
+		|| {QueueName, {M, F}} <- get_default_rpcs() ],
+	RpcPids = RpcPids1,
 
 	{ok, {ServerIp, ToClientEx, FromClientEx, {Connection, ChTC, ChFC}, RpcPids}}.
 
