@@ -15,13 +15,21 @@
 -export([handle_call/3]).
 -export([ctest/0]).
 
+-export([rpc_echo/1]).
+-export([rpc_make_new_account/2]).
+-export([rpc_login/2]).
+-export([rpc_logout/1]).
+-export([rpc_check_token/1]).
+-export([rpc_online/1]).
+-export([rpc_offline/1]).
+
 ctest() ->
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
 	io:format("connection ok~n",[]),
 
 	Pid = amqp_rpc_client:start(Connection, <<"echo">>),
 	io:format("start link ok, ~p~n",[Pid]),
-	io:format("call returned with '~p'~n",[ amqp_rpc_client:call(Pid, <<"ctest calls!">>) ]),
+	io:format("call returned with '~p'~n",[ amqp_rpc_client:call(Pid, [<<"ctest calls!">>]) ]),
 	amqp_rpc_client:stop(Pid),
 
 	ok.
@@ -57,7 +65,6 @@ get_default_rpcs() -> [
 ].
 
 rpc_echo(X) -> X.
-
 rpc_make_new_account(LoginId, Password) -> ng.
 rpc_login(LoginId, Password) -> ng.
 rpc_logout(Token) -> ng.
@@ -111,7 +118,7 @@ init(Args) ->
 		= bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>]),
 
 	%% setup RPC listeners
-	RpcPids1 = [amqp_rpc_server:start_link(Connection, QueueName, fun(A) -> apply(M, F, A) end)
+	RpcPids1 = [amqp_rpc_server:start_link(Connection, QueueName, fun(X) -> apply(M,F,X) end)
 		|| {QueueName, {M, F}} <- get_default_rpcs() ],
 	RpcPids = RpcPids1,
 
@@ -133,12 +140,17 @@ handle_info(#'basic.consume_ok'{}, State) ->
 	{noreply, State};
 
 %% while subscribing, message will be delivered by #amqp_msg
-handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
-	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
-	Message = Body ,
-	amqp_channel:cast(ChTC,
-		#'basic.publish'{exchange = ToClientEx, routing_key = <<"chat.open">> },
-		#amqp_msg{payload = Message}),
+%handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
+%	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
+%	Message = Body ,
+%	amqp_channel:cast(ChTC,
+%		#'basic.publish'{exchange = ToClientEx, routing_key = <<"chat.open">> },
+%		#amqp_msg{payload = Message}),
+%	{noreply, State};
+
+%% drop all
+handle_info(X, State) ->
+	io:format("handle_info get unknown message ~p~n", [X]),
 	{noreply, State}.
 
 handle_call({broadcast, Id, Payload}, From, State) ->

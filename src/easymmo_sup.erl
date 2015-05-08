@@ -37,10 +37,9 @@ init([]) ->
 	auth_srv(),
 	chat_srv(),
 	move_srv(),
-	object_srv(),
-	emmo_auth()
-	,
-	player_if()
+	object_srv()
+	, emmo_auth()
+%%	, player_if()
 	],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
