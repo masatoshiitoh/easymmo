@@ -14,6 +14,7 @@
 -export([handle_info/2]).
 -export([handle_call/3]).
 -export([ctest/0]).
+-export([ctest2/0]).
 
 -export([rpc_echo/1]).
 -export([rpc_make_new_account/2]).
@@ -28,12 +29,23 @@ ctest() ->
 	io:format("connection ok~n",[]),
 
 	Pid = amqp_rpc_client:start(Connection, <<"echo">>),
-	io:format("start link ok, ~p~n",[Pid]),
-	io:format("call returned with '~p'~n",[ amqp_rpc_client:call(Pid, [<<"ctest calls!">>]) ]),
+	io:format("player_if/ctest:start link ok, ~p~n",[Pid]),
+	io:format("player_if/ctest:call returned with '~p'~n",[ amqp_rpc_client:call(Pid, term_to_binary([<<"ctest calls!">>])) ]),
 	amqp_rpc_client:stop(Pid),
 
 	ok.
-	
+
+ctest2() ->
+	call_rpc(<<"echo">>, [<<"hello!">>]).
+
+call_rpc(Function, Args) when is_binary(Function), is_list(Args) ->
+    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
+	Pid = amqp_rpc_client:start(Connection, Function),
+	Result = amqp_rpc_client:call(Pid, term_to_binary([<<"ctest calls!">>])),
+	amqp_rpc_client:stop(Pid),
+	Result.
+
+
 %%
 %% APIs
 %%
@@ -64,7 +76,7 @@ get_default_rpcs() -> [
 	{<<"offline">>,		{?MODULE, rpc_offline}}
 ].
 
-rpc_echo(X) -> X.
+rpc_echo(_Payload) -> <<"echo!!">>.
 rpc_make_new_account(LoginId, Password) -> ng.
 rpc_login(LoginId, Password) -> ng.
 rpc_logout(Token) -> ng.
@@ -118,7 +130,9 @@ init(Args) ->
 		= bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>]),
 
 	%% setup RPC listeners
-	RpcPids1 = [amqp_rpc_server:start_link(Connection, QueueName, fun(X) -> apply(M,F,X) end)
+	RpcPids1 = [amqp_rpc_server:start_link(Connection, QueueName, fun(Payload) ->
+					AList = binary_to_term(Payload),
+					apply(M,F,AList) end)
 		|| {QueueName, {M, F}} <- get_default_rpcs() ],
 	RpcPids = RpcPids1,
 
