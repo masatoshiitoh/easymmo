@@ -2,7 +2,7 @@
 %% player_if.erl
 %%
 %% this module communicates players unity client via AMQP (rabbitmq client) with JSON.
-%% use internal service for this work. call internal services via Erlang gen_service framework.
+%% use internal service for this work. call internal services via Erlang gen_server framework.
 %%
 
 -module(player_if).
@@ -48,6 +48,12 @@ ctest() ->
 
 	ok.
 
+seqtest() ->
+	{ok, Uid, Token, Expire} = new_account("ichiro", "1111"),
+	ok = check_token(Token),
+	ok = logout(Token),
+	ok.
+
 
 %%
 %% APIs
@@ -84,10 +90,19 @@ get_default_rpcs() -> [
 %%
 %%
 rpc_echo(_Payload) -> term_to_binary({ok,"echo!!"}).
-rpc_make_new_account(LoginId, Password) -> term_to_binary({ng, notoken}).
-rpc_login(LoginId, Password) -> term_to_binary({ng, notoken}).
-rpc_logout(Token) -> term_to_binary(ng).
-rpc_check_token(Token) -> ng.
+
+rpc_make_new_account(LoginId, Password) ->
+	term_to_binary(impl_new_account(LoginId, Password)).
+
+rpc_login(LoginId, Password) ->
+	term_to_binary(impl_login(LoginId, Password)).
+
+rpc_logout(Token) ->
+	term_to_binary(impl_logout(Token)).
+
+rpc_check_token(Token) ->
+	term_to_binary(impl_check_token(Token)).
+
 rpc_online(Token) -> ng.
 rpc_offline(Token) -> ng.
 
@@ -100,21 +115,21 @@ rpc_offline(Token) -> ng.
 impl_new_account(Id, Password) ->
 	{auth, Result, Uid} = auth_srv:new(Id, Password),
 	{token, Token, Expire} = token_srv:new(Uid),
-	{new_account, Uid, Token, Expire}.
+	{ok, Uid, Token, Expire}.
 
 impl_login(Id, Password) ->
 	{auth, Result, Uid} = auth_srv:lookup(Id, Password),
 	{token, Token, Expire} = token_srv:new(Uid),
-	{login, Uid, Token, Expire}.
+	{ok, Uid, Token, Expire}.
 
 impl_logout(Token) ->
 	{auth, ok} = auth_srv:record_logout(Token),
 	{token, ok} = token_srv:invalidate(Token),
-	{logout, ok}.
+	ok.
 
 impl_check_token(Token) ->
 	{token, ok} = token_srv:lookup(Token),
-	{logout, ok}.
+	ok.
 
 %%
 %% Behaviors
