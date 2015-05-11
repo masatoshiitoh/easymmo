@@ -113,22 +113,28 @@ rpc_offline(Token) -> ng.
 %%
 
 impl_new_account(Id, Password) ->
-	{auth, Result, Uid} = auth_srv:new(Id, Password),
-	{token, Token, Expire} = token_srv:new(Uid),
+	%% {auth, Result, Uid} = auth_srv:new(Id, Password),
+	%% {token, Token, Expire} = token_srv:new(Uid),
+	Uid = "uiduid",
+	Token = "tokentoken",
+	Expire = "expireexpire",
 	{ok, Uid, Token, Expire}.
 
 impl_login(Id, Password) ->
-	{auth, Result, Uid} = auth_srv:lookup(Id, Password),
-	{token, Token, Expire} = token_srv:new(Uid),
+	%% {auth, Result, Uid} = auth_srv:lookup(Id, Password),
+	%% {token, Token, Expire} = token_srv:new(Uid),
+	Uid = "uiduid",
+	Token = "tokentoken",
+	Expire = "expireexpire",
 	{ok, Uid, Token, Expire}.
 
 impl_logout(Token) ->
-	{auth, ok} = auth_srv:record_logout(Token),
-	{token, ok} = token_srv:invalidate(Token),
+	%% {auth, ok} = auth_srv:record_logout(Token),
+	%% {token, ok} = token_srv:invalidate(Token),
 	ok.
 
 impl_check_token(Token) ->
-	{token, ok} = token_srv:lookup(Token),
+	%% {token, ok} = token_srv:lookup(Token),
 	ok.
 
 %%
