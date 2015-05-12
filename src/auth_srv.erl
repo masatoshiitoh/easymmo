@@ -13,11 +13,12 @@
 -export([terminate/2]).
 -export([init/1]).
 
--export([ctest/0]).
+-export([test/0]).
+-export([test1/0]).
 
 -export([handle_call/3]).
 
--export([new/2]). %% argument 1 : uid, 2 : pass
+-export([add/2]). %% argument 1 : uid, 2 : pass
 -export([lookup/2]).
 -export([record_logout/2]).
 
@@ -26,23 +27,10 @@
 
 -define(BYTES_OF_TOKEN, 8).
 
-
-ctest() ->
-    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
-	io:format("connection ok~n",[]),
-	Pid = amqp_rpc_client:start(Connection, <<"authrpc">>),
-	io:format("start link ok, ~p~n",[Pid]),
-	io:format("call return ~p~n",[ amqp_rpc_client:call(Pid, <<"ctest calls!">>) ]),
-	amqp_rpc_client:stop(Pid),
-	ok.
-	
 %%
 %% ID/Pass check and other works.
 %%
 
-new(LoginId, Password) ->
-	{Result, Params} = gen_server:call(?MODULE, {new, LoginId, Password}),
-	{auth, Result, Params}.
 
 lookup(LoginId, Token) ->
 	%% call RPC
@@ -66,15 +54,18 @@ test() ->
 	Reply = gen_server:call(?MODULE, {remove_all}),
 	%%C1 = #auth{uid = "ichiro", pass = "1111", token = ""},
 
-	add("ichiro", "1111"),
+	io:format("add ichiro with 2222 = ~p~n", [ add("ichiro", "2222") ]),
+	io:format("del ichiro with 2222 = ~p~n", [ del("ichiro", "2222") ]),
+	io:format("login ichiro 2222 = ~p~n", [login("ichiro", "2222")]),
 
-	%% del("ichiro", "1111"),
+	io:format("add ichiro with 1111 = ~p~n", [ add("ichiro", "1111") ]),
 
 	io:format("login ichiro 1111 = ~p~n", [login("ichiro", "1111")]),
-	io:format("login ichiro 2222 = ~p~n", [login("ichiro", "2222")]).
+	io:format("login ichiro 2222 = ~p~n", [login("ichiro", "2222")]),
+	ok.
 
-add(Uid, Pass) ->
-	Reply = gen_server:call(?MODULE, {add, make_auth(Uid, Pass) }).
+add(LoginId, Password) ->
+	Reply = gen_server:call(?MODULE, {add, make_auth(LoginId, Password) }).
 
 del(Uid, Pass) ->
 	Reply = gen_server:call(?MODULE, {del, make_auth(Uid, Pass) }).
@@ -85,8 +76,8 @@ login(Uid, Pass) ->
 logout(Uid, Token) ->
 	Reply = gen_server:call(?MODULE, {logout, Uid, Token}).
 
-make_auth(Uid, Pass) ->
-	#auth{uid = Uid, pass = Pass}.
+make_auth(LoginId, Pass) ->
+	#auth{uid = LoginId, pass = Pass}.
 	
 
 %%
@@ -117,7 +108,9 @@ handle_call({add, V}, From, State) when is_record(V, auth) ->
 	Obj2 = riakc_obj:update_metadata(Obj1, MD1),
 
 	riakc_pb_socket:put(Pid, Obj2),
-	{reply, ok, State};
+
+	PKey = binary_to_list(BinId),
+	{reply, {ok, PKey}, State};
 
 
 handle_call({del, V}, From, State) when is_record(V, auth) ->
@@ -133,15 +126,19 @@ handle_call({del, V}, From, State) when is_record(V, auth) ->
 
 handle_call({login, Uid, Pass}, From, State) ->
 	Pid = State,
-	[BinPKey|_] = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
-	io:format("login : ~p~n", [BinPKey]),
-	Data = impl_fetch(Pid, BinPKey),
-	io:format("login lookup: ~p~n", [Data]),
-	Cid = binary_to_list(BinPKey),
-	{ok, Cid, Token} = pc_pool:token_new_impl(Pid, Cid),
-	case Data#auth.pass =:= Pass of
-		true -> {reply, {ok, Cid, Token }, State};
-		_ -> {reply, error, State}
+	%% [BinPKey|_] = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
+	case impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)) of
+		[] -> {reply, error, State};
+		[BinPKey |_] ->
+			io:format("login : ~p~n", [BinPKey]),
+			Data = impl_fetch(Pid, BinPKey),
+			io:format("login lookup: ~p~n", [Data]),
+			Cid = binary_to_list(BinPKey),
+			{ok, Cid, Token} = pc_pool:token_new_impl(Pid, Cid),
+			case Data#auth.pass =:= Pass of
+				true -> {reply, {ok, Cid, Token }, State};
+				_ -> {reply, error, State}
+			end
 	end;
 
 

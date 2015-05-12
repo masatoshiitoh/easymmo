@@ -113,9 +113,9 @@ rpc_offline(Token) -> ng.
 %%
 
 impl_new_account(Id, Password) ->
-	%% {auth, Result, Uid} = auth_srv:new(Id, Password),
+	{ok, Uid} = auth_srv:add(Id, Password),
 	%% {token, Token, Expire} = token_srv:new(Uid),
-	Uid = "uiduid",
+	%% Uid = "uiduid",
 	Token = "tokentoken",
 	Expire = "expireexpire",
 	{ok, Uid, Token, Expire}.
