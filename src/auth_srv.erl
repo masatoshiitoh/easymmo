@@ -67,17 +67,17 @@ test() ->
 add(LoginId, Password) ->
 	Reply = gen_server:call(?MODULE, {add, make_auth(LoginId, Password) }).
 
-del(Uid, Pass) ->
-	Reply = gen_server:call(?MODULE, {del, make_auth(Uid, Pass) }).
+del(LoginId, Password) ->
+	Reply = gen_server:call(?MODULE, {del, make_auth(LoginId, Password) }).
 
-login(Uid, Pass) ->
-	Reply = gen_server:call(?MODULE, {login, Uid, Pass}).
+login(LoginId, Password) ->
+	Reply = gen_server:call(?MODULE, {login, LoginId, Password}).
 
 logout(Uid, Token) ->
 	Reply = gen_server:call(?MODULE, {logout, Uid, Token}).
 
-make_auth(LoginId, Pass) ->
-	#auth{uid = LoginId, pass = Pass}.
+make_auth(LoginId, Password) ->
+	#auth{uid = LoginId, pass = Password}.
 	
 
 %%
@@ -124,10 +124,9 @@ handle_call({del, V}, From, State) when is_record(V, auth) ->
 	{reply, ok, State};
 
 
-handle_call({login, Uid, Pass}, From, State) ->
+handle_call({login, LoginId, Pass}, From, State) ->
 	Pid = State,
-	%% [BinPKey|_] = impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)),
-	case impl_lookup_with_binary(Pid, "uid", list_to_binary(Uid)) of
+	case impl_lookup_with_binary(Pid, "uid", list_to_binary(LoginId)) of
 		[] -> {reply, error, State};
 		[BinPKey |_] ->
 			io:format("login : ~p~n", [BinPKey]),
