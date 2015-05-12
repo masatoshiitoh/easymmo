@@ -22,8 +22,8 @@
 -export([lookup/2]).
 -export([record_logout/2]).
 
--define(AuthBucket, <<"auth">>).
--define(UTokenBucket, <<"auth_token">>).
+-define(AuthBucket, <<"accounts">>).
+-define(UTokenBucket, <<"tokens">>).
 
 -define(BYTES_OF_TOKEN, 8).
 
