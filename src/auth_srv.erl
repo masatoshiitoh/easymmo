@@ -23,9 +23,6 @@
 -export([record_logout/2]).
 
 -define(AuthBucket, <<"accounts">>).
--define(UTokenBucket, <<"tokens">>).
-
--define(BYTES_OF_TOKEN, 8).
 
 %%
 %% ID/Pass check and other works.
@@ -52,7 +49,6 @@ test1() ->
 
 test() ->
 	Reply = gen_server:call(?MODULE, {remove_all}),
-	%%C1 = #auth{uid = "ichiro", pass = "1111", token = ""},
 
 	io:format("add ichiro with 2222 = ~p~n", [ add("ichiro", "2222") ]),
 	io:format("del ichiro with 2222 = ~p~n", [ del("ichiro", "2222") ]),
@@ -238,5 +234,4 @@ impl_offline(Pid, BinId, Token) when is_binary(BinId) ->
 	0.
 
 
-gen_token() -> crypto:rand_bytes(?BYTES_OF_TOKEN).
 
