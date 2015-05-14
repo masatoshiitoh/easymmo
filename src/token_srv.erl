@@ -56,16 +56,17 @@ init(Args) ->
 terminate(_Reason, State) ->
 	ok.
 
-handle_call({add, Key}, From, State) when is_list(Key) ->
+handle_call({add, Id}, From, State) when is_list(Id) ->
 	Pid = State,
 	BinId = erlang:list_to_binary(Id),
+	V = gen_token(),
 	Obj1 = riakc_obj:new(?UTokenBucket, BinId, V),
 	io:format("~p~n", [Obj1]),
 
 	MetaData = riakc_obj:get_update_metadata(Obj1),
 	io:format("~p~n", [MetaData]),
 
-	MD1 = riakc_obj:set_secondary_index(MetaData, [{{integer_index, "map_id"}, [V#loc.map_id]}]),
+	MD1 = riakc_obj:set_secondary_index(MetaData, [{{integer_index, "expire_unixtime"}, [V#loc.map_id]}]),
 
 	Obj2 = riakc_obj:update_metadata(Obj1, MD1),
 
@@ -74,25 +75,22 @@ handle_call({add, Key}, From, State) when is_list(Key) ->
 
 handle_call({remove_all}, From, State) ->
 	Pid = State,
-	MyBucket = <<"map">>,
-	{ok, BinKeys} = riakc_pb_socket:list_keys(Pid, MyBucket),
+	{ok, BinKeys} = riakc_pb_socket:list_keys(Pid, ?UTokenBucket),
 	Result = lists:foreach(fun(X) ->
-		riakc_pb_socket:delete(Pid, MyBucket, X)
+		riakc_pb_socket:delete(Pid, ?UTokenBucket, X)
 		end,
 	BinKeys),
 	{reply, Result, Pid};
 
 handle_call({remove, BinId}, From, State) when is_binary(BinId) ->
 	Pid = State,
-	MyBucket = <<"map">>,
-	riakc_pb_socket:delete(Pid, MyBucket, BinId),
+	riakc_pb_socket:delete(Pid, ?UTokenBucket, BinId),
 	{reply, ok, State};
 
 handle_call({remove, Id}, From, State) when is_list(Id) ->
 	Pid = State,
-	MyBucket = <<"map">>,
 	BinId = erlang:list_to_binary(Id),
-	riakc_pb_socket:delete(Pid, MyBucket, BinId),
+	riakc_pb_socket:delete(Pid, ?UTokenBucket, BinId),
 	{reply, ok, State};
 
 handle_call({lookup, Id}, From, State) when is_list(Id) ->
@@ -104,21 +102,56 @@ handle_call({lookup_with_integer, Attr, K}, From, State) ->
 	Pid = State,
 	V = impl_lookup_with_integer(Pid, Attr, K),
 	TextVal = binary_to_list(V),
-	{reply, {ok, TextVal}, State};
+	{reply, {ok, TextVal}, State}.
 
 impl_lookup(Pid, Id) when is_list(Id) ->
 	BinId = erlang:list_to_binary(Id),
 	impl_lookup(Pid, BinId);
 
 impl_lookup(Pid, BinId) when is_binary(BinId)->
-	MyBucket = <<"map">>,
-	{ok, Fetched1} = riakc_pb_socket:get(Pid, MyBucket, BinId),
+	{ok, Fetched1} = riakc_pb_socket:get(Pid, ?UTokenBucket, BinId),
 	Val = binary_to_term(riakc_obj:get_value(Fetched1)).
 
 impl_lookup_with_integer(Pid, Attr, Key) ->
-	MyBucket = <<"map">>,
-	{ok, {index_results_v1, L, _,_}} = riakc_pb_socket:get_index_eq(Pid, MyBucket,{integer_index, Attr}, Key),
+	{ok, {index_results_v1, L, _,_}} = riakc_pb_socket:get_index_eq(Pid, ?UTokenBucket,{integer_index, Attr}, Key),
 	L.
+
+
+
+impl_check_is_online(Pid, Id, Token) when is_list(Id) ->
+	BinId = erlang:list_to_binary(Id),
+	impl_check_is_online(Pid, BinId, Token);
+
+impl_check_is_online(Pid, BinId, Token) when is_binary(BinId) ->
+	case riakc_pb_socket:get(Pid, ?UTokenBucket, BinId) of
+		{ok, Fetched1} -> true;
+		{error, notfound} -> false
+	end.
+
+
+impl_online(Pid, Id, Token) when is_list(Id) ->
+	BinId = erlang:list_to_binary(Id),
+	impl_online(Pid, BinId, Token);
+
+impl_online(Pid, BinId, Token) when is_binary(BinId) ->
+	case impl_check_is_online(Pid, BinId, Token) of
+	true ->
+		Token = gen_token(),
+		Obj1 = riakc_obj:new(?UTokenBucket, BinId, Token),
+		riakc_pb_socket:put(Pid, Obj1),
+		ok;
+	false ->
+		0
+	end.
+
+
+impl_offline(Pid, Id, Token) when is_list(Id) ->
+	BinId = erlang:list_to_binary(Id),
+	impl_offline(Pid, BinId, Token);
+
+impl_offline(Pid, BinId, Token) when is_binary(BinId) ->
+	0.
+
 
 
 
