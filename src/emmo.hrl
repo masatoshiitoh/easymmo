@@ -4,5 +4,4 @@
 
 
 -record(account, {login_id = "", password = ""}).
--record(token, {expire_unixtime = 0, token = ""}).
 

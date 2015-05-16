@@ -38,6 +38,7 @@ init([]) ->
 	chat_srv(),
 	move_srv(),
 	object_srv()
+	, token_srv()
 	, player_if()
 	],
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
@@ -78,6 +79,19 @@ auth_srv_one(RiakIp, RiakPort) ->
 	Type = worker,
 	Modules = [auth_srv],
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
+token_srv() ->
+	token_srv_one("192.168.56.11", 8087).
+
+token_srv_one(RiakIp, RiakPort) ->
+	ID = token_srv,
+	StartFunc = {token_srv, start_link, [RiakIp, RiakPort]},
+	Restart = permanent,
+	Shutdown = brutal_kill,
+	Type = worker,
+	Modules = [token_srv],
+	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
+
 
 chat_srv() ->
 	chat_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
