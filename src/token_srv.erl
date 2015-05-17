@@ -24,13 +24,18 @@
 test() ->
 	remove_all(),
 
-	T1 = add("0123"),
+	T1 = add("0123"),		%% use default expiration limit.
 	ok = check("0123", T1),
 	ng = check("0124", T1),
 
-	T2 = add("0123", -1),
+	T2 = add("0123", -1),	%% set expiration limit (-1 means "already expired".).
 	ng = check("0123", T2),
 	ng = check("0124", T2),
+
+	ok = remove("0123", T1),
+	ok = remove("0123", T1),
+	ok = remove("0124", T1),
+	ok = remove("0123", T2),
 
 	ok.
 
@@ -51,15 +56,16 @@ check(Id, Token) ->
 	{ok, V} = gen_server:call(?MODULE, {check, Id, Token}),
 	V.
 
+%% remove/2 return ok everytime.
 remove(Id, Token) ->
-	Reply = gen_server:call(?MODULE, {remove, Id, Token}).
+	gen_server:call(?MODULE, {remove, Id, Token}).
 
 %%
 %% Utilities
 %%
 
 gen_token() ->
-	gen_token(get_unixtime() + ?DEFAULT_TOKEN_LIFE).
+	gen_token(get_default_expire_unixtime()).
 
 gen_token(ExpireUnixtime) ->
 	integer_to_list(binary:decode_unsigned(crypto:rand_bytes(?BYTES_OF_TOKEN), big)).
@@ -110,27 +116,11 @@ handle_call({check, Id, Token}, From, State) ->
 	Val1 = impl_check_token(Pid, Id, Token),
 	{reply, {ok, Val1}, State};
 
-handle_call({remove, BinId}, From, State) when is_binary(BinId) ->
+handle_call({remove, Id, Token}, From, State) ->
 	Pid = State,
-	riakc_pb_socket:delete(Pid, ?UTokenBucket, BinId),
-	{reply, ok, State};
-
-handle_call({remove, Id}, From, State) when is_list(Id) ->
-	Pid = State,
-	BinId = erlang:list_to_binary(Id),
-	riakc_pb_socket:delete(Pid, ?UTokenBucket, BinId),
-	{reply, ok, State};
-
-handle_call({lookup, Id}, From, State) when is_list(Id) ->
-	Pid = State,
-	Val1 = impl_lookup(Pid, Id),
-	{reply, {ok, Val1}, State};
-
-handle_call({lookup_with_integer, Attr, K}, From, State) ->
-	Pid = State,
-	V = impl_lookup_with_integer(Pid, Attr, K),
-	TextVal = binary_to_list(V),
-	{reply, {ok, TextVal}, State}.
+	BinKey = term_to_binary({Id, Token}),
+	riakc_pb_socket:delete(Pid, ?UTokenBucket, BinKey),
+	{reply, ok, State}.
 
 %%
 %% Implements: read/write tokens
