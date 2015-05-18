@@ -97,14 +97,14 @@ rpc_make_new_account(LoginId, Password) ->
 rpc_login(LoginId, Password) ->
 	term_to_binary(impl_login(LoginId, Password)).
 
-rpc_logout(Token) ->
-	term_to_binary(impl_logout(Token)).
+rpc_logout(Uid, Token) ->
+	term_to_binary(impl_logout(Uid, Token)).
 
-rpc_check_token(Token) ->
-	term_to_binary(impl_check_token(Token)).
+rpc_check_token(Uid, Token) ->
+	term_to_binary(impl_check_token(Uid, Token)).
 
-rpc_online(Token) -> ng.
-rpc_offline(Token) -> ng.
+rpc_online(Uid, Token) -> ng.
+rpc_offline(Uid, Token) -> ng.
 
 
 

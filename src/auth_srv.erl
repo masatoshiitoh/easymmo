@@ -25,19 +25,6 @@
 -define(AuthBucket, <<"accounts">>).
 
 %%
-%% ID/Pass check and other works.
-%%
-
-
-lookup(LoginId, Token) ->
-	%% call RPC
-	{auth, ng, uid}.
-
-record_logout(LoginId, Pass) ->
-	%% call RPC
-	{auth, ng}.
-
-%%
 %% Behaviors
 %%
 
@@ -71,6 +58,14 @@ login(LoginId, Password) ->
 
 logout(Uid, Token) ->
 	Reply = gen_server:call(?MODULE, {logout, Uid, Token}).
+
+lookup(LoginId, Token) ->
+	%% call RPC
+	{auth, ng, uid}.
+
+record_logout(LoginId, Pass) ->
+	%% call RPC
+	{auth, ng}.
 
 make_auth(LoginId, Password) ->
 	#account{login_id = LoginId, password = Password}.
