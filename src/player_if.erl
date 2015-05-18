@@ -13,8 +13,8 @@
 -export([init/1]).
 -export([handle_info/2]).
 -export([handle_call/3]).
--export([ctest/0]).
--export([seqtest/0]).
+-export([rpctest/0]).
+-export([test/0]).
 
 -export([rpc_echo/1]).
 -export([rpc_make_new_account/2]).
@@ -24,7 +24,7 @@
 -export([rpc_online/2]).
 -export([rpc_offline/2]).
 
-ctest() ->
+rpctest() ->
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
 	io:format("connection ok~n",[]),
 
@@ -49,8 +49,8 @@ ctest() ->
 
 	ok.
 
-seqtest() ->
-	{ok, Uid, Token, Expire} = new_account("test0000", "1111"),
+test() ->
+	{ok, Uid, Token} = new_account("test0000", "1111"),
 	ok = check_token(Uid, Token),
 	ok = logout(Uid, Token),
 	ok.
@@ -116,11 +116,8 @@ rpc_offline(Uid, Token) -> ng.
 
 impl_new_account(Id, Password) ->
 	{ok, Uid} = auth_srv:add(Id, Password),
-	%%{token, Uid, Token, Expire} = token_srv:new(Uid),
-	%% Uid = "uiduid",
-	Token = "tokentoken",
-	Expire = "expireexpire",
-	{ok, Uid, Token, Expire}.
+	Token = token_srv:add(Uid),
+	{ok, Uid, Token}.
 
 impl_login(Id, Password) ->
 	%% {auth, Result, Uid} = auth_srv:lookup(Id, Password),
