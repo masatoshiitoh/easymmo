@@ -14,14 +14,15 @@
 -export([handle_info/2]).
 -export([handle_call/3]).
 -export([ctest/0]).
+-export([seqtest/0]).
 
 -export([rpc_echo/1]).
 -export([rpc_make_new_account/2]).
 -export([rpc_login/2]).
--export([rpc_logout/1]).
--export([rpc_check_token/1]).
--export([rpc_online/1]).
--export([rpc_offline/1]).
+-export([rpc_logout/2]).
+-export([rpc_check_token/2]).
+-export([rpc_online/2]).
+-export([rpc_offline/2]).
 
 ctest() ->
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
@@ -49,9 +50,9 @@ ctest() ->
 	ok.
 
 seqtest() ->
-	{ok, Uid, Token, Expire} = new_account("ichiro", "1111"),
-	ok = check_token(Token),
-	ok = logout(Token),
+	{ok, Uid, Token, Expire} = new_account("test0000", "1111"),
+	ok = check_token(Uid, Token),
+	ok = logout(Uid, Token),
 	ok.
 
 
@@ -65,8 +66,9 @@ seqtest() ->
 %%
 new_account(Id, Password) -> impl_new_account(Id, Password).
 login(Id, Password) -> impl_login(Id, Password).
-logout(Token) -> impl_logout(Token).
-check_token(Token) -> impl_logout(Token).
+logout(Uid, Token) -> impl_logout(Uid, Token).
+check_token(Uid, Token) -> impl_check_token(Uid, Token).
+
 online(Token) -> 0.
 offline(Token) -> 0.
 
@@ -87,7 +89,7 @@ get_default_rpcs() -> [
 
 %%
 %% server process body here.
-%%
+%% returns binary values.
 %%
 rpc_echo(_Payload) -> term_to_binary({ok,"echo!!"}).
 
@@ -97,14 +99,14 @@ rpc_make_new_account(LoginId, Password) ->
 rpc_login(LoginId, Password) ->
 	term_to_binary(impl_login(LoginId, Password)).
 
-rpc_logout(Token) ->
-	term_to_binary(impl_logout(Token)).
+rpc_logout(Uid, Token) ->
+	term_to_binary(impl_logout(Uid, Token)).
 
-rpc_check_token(Token) ->
-	term_to_binary(impl_check_token(Token)).
+rpc_check_token(Uid, Token) ->
+	term_to_binary(impl_check_token(Uid, Token)).
 
-rpc_online(Token) -> ng.
-rpc_offline(Token) -> ng.
+rpc_online(Uid, Token) -> ng.
+rpc_offline(Uid, Token) -> ng.
 
 
 
@@ -114,7 +116,7 @@ rpc_offline(Token) -> ng.
 
 impl_new_account(Id, Password) ->
 	{ok, Uid} = auth_srv:add(Id, Password),
-	{token, Uid, Token, Expire} = token_srv:new(Uid),
+	%%{token, Uid, Token, Expire} = token_srv:new(Uid),
 	%% Uid = "uiduid",
 	Token = "tokentoken",
 	Expire = "expireexpire",
@@ -128,13 +130,13 @@ impl_login(Id, Password) ->
 	Expire = "expireexpire",
 	{ok, Uid, Token, Expire}.
 
-impl_logout(Token) ->
-	%% {auth, ok} = auth_srv:record_logout(Token),
-	%% {token, ok} = token_srv:invalidate(Token),
+impl_logout(Uid, Token) ->
+	%% {auth, ok} = auth_srv:record_logout(Uid, Token),
+	%% {token, ok} = token_srv:remove(Uid, Token),
 	ok.
 
-impl_check_token(Token) ->
-	%% {token, ok} = token_srv:lookup(Token),
+impl_check_token(Uid, Token) ->
+	%% {token, ok} = token_srv:check(Uid, Token),
 	ok.
 
 %%

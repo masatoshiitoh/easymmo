@@ -50,14 +50,14 @@ test1() ->
 test() ->
 	Reply = gen_server:call(?MODULE, {remove_all}),
 
-	io:format("add ichiro with 2222 = ~p~n", [ add("ichiro", "2222") ]),
-	io:format("del ichiro with 2222 = ~p~n", [ del("ichiro", "2222") ]),
-	io:format("login ichiro 2222 = ~p~n", [login("ichiro", "2222")]),
+	{ok, _Uid1} = add("ichiro", "2222"),
+	ok = del("ichiro", "2222"), 
+	error = login("ichiro", "2222"),
 
-	io:format("add ichiro with 1111 = ~p~n", [ add("ichiro", "1111") ]),
+	{ok, Uid2} = add("ichiro", "1111"),
 
-	io:format("login ichiro 1111 = ~p~n", [login("ichiro", "1111")]),
-	io:format("login ichiro 2222 = ~p~n", [login("ichiro", "2222")]),
+	{ok, Uid2, Token} = login("ichiro", "1111"),
+	error = login("ichiro", "2222"),
 	ok.
 
 add(LoginId, Password) ->
