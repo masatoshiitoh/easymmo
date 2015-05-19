@@ -120,21 +120,16 @@ impl_new_account(Id, Password) ->
 	{ok, Uid, Token}.
 
 impl_login(Id, Password) ->
-	%% {auth, Result, Uid} = auth_srv:lookup(Id, Password),
-	%% {token, Token, Expire} = token_srv:new(Uid),
-	Uid = "uiduid",
-	Token = "tokentoken",
-	Expire = "expireexpire",
-	{ok, Uid, Token, Expire}.
+	{ok, Uid} = auth_srv:login(Id, Password),
+	Token = token_srv:add(Uid),
+	{ok, Uid, Token}.
 
 impl_logout(Uid, Token) ->
-	%% {auth, ok} = auth_srv:record_logout(Uid, Token),
-	%% {token, ok} = token_srv:remove(Uid, Token),
-	ok.
+	ok = auth_srv:logout(Uid, Token),
+	ok = token_srv:remove(Uid, Token).
 
 impl_check_token(Uid, Token) ->
-	%% {token, ok} = token_srv:check(Uid, Token),
-	ok.
+	Result = token_srv:check(Uid, Token).
 
 %%
 %% Behaviors

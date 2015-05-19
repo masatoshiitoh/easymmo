@@ -19,8 +19,9 @@
 -export([handle_call/3]).
 
 -export([add/2]). %% argument 1 : uid, 2 : pass
--export([lookup/2]).
--export([record_logout/2]).
+-export([del/2]). %% argument 1 : uid, 2 : pass
+-export([login/2]).
+-export([logout/2]).
 
 -define(AuthBucket, <<"accounts">>).
 
@@ -43,7 +44,7 @@ test() ->
 
 	{ok, Uid2} = add("ichiro", "1111"),
 
-	{ok, Uid2, Token} = login("ichiro", "1111"),
+	{ok, Uid2} = login("ichiro", "1111"),
 	error = login("ichiro", "2222"),
 	ok.
 
@@ -58,14 +59,6 @@ login(LoginId, Password) ->
 
 logout(Uid, Token) ->
 	Reply = gen_server:call(?MODULE, {logout, Uid, Token}).
-
-lookup(LoginId, Token) ->
-	%% call RPC
-	{auth, ng, uid}.
-
-record_logout(LoginId, Pass) ->
-	%% call RPC
-	{auth, ng}.
 
 make_auth(LoginId, Password) ->
 	#account{login_id = LoginId, password = Password}.
@@ -124,9 +117,8 @@ handle_call({login, LoginId, Pass}, From, State) ->
 			Data = impl_fetch(Pid, BinPKey),
 			io:format("login lookup: ~p~n", [Data]),
 			Cid = binary_to_list(BinPKey),
-			{ok, Cid, Token} = pc_pool:token_new_impl(Pid, Cid),
 			case Data#account.password =:= Pass of
-				true -> {reply, {ok, Cid, Token }, State};
+				true -> {reply, {ok, Cid}, State};
 				_ -> {reply, error, State}
 			end
 	end;
@@ -134,8 +126,7 @@ handle_call({login, LoginId, Pass}, From, State) ->
 
 handle_call({logout, PKey, Token}, From, State) ->
 	Pid = State,
-	Data = impl_fetch(Pid, PKey),
-	{reply, {ok, PKey, Token }, State};
+	{reply, ok, State};
 
 handle_call({remove_all}, From, State) ->
 	Pid = State,
