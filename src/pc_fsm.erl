@@ -14,9 +14,20 @@
 
 -include("emmo.hrl").
 
--export([start_link/2]).
--export([terminate/2]).
+%% public API
+-export([start_link/1]).
+-export([start/1]).
+
+%% gen_fsm callbacks
 -export([init/1]).
+-export([handle_event/3]).
+-export([handle_sync_event/4]).
+-export([handle_info/3]).
+-export([terminate/3]).
+-export([code_change/4]).
+
+%% custom state names
+-export([idle/2]).
 
 %%
 %% APIs
@@ -25,13 +36,15 @@
 %%
 %% Behaviors
 %%
-start_link(RiakIp, RiakPort) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, [RiakIp, RiakPort], []).
+start_link(Name) ->
+	gen_server:start_link(?MODULE, [Name], []).
+
+start(Name) ->
+	gen_server:start(?MODULE, [Name], []).
 
 init(Args) ->
-    [RiakIp, RiakPort] = Args,
-	{ok, Pid} = riakc_pb_socket:start(RiakIp, RiakPort),
-	NewState = Pid,
+    [Name] = Args,
+	NewState = Name,
 	{ok, NewState}.
 
 terminate(_Reason, State) ->
