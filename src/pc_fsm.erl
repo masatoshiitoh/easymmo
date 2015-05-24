@@ -51,6 +51,8 @@ terminate(_Reason, State) ->
 	ok.
 
 
+idle(Event, _From, Data) ->
+	{next_state, idle, Data}.
 
 
 
