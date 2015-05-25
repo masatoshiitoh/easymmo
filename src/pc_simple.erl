@@ -2,35 +2,35 @@
 -behaviour(gen_fsm).
 
 -export([start_link/1, stop/0]).
--export([button/1, get_state/0]).
--export([init/1, locked/2, open/2]).
+-export([attack/1, get_state/0]).
+-export([init/1, good/2, dead/2]).
 -export([handle_event/3, terminate/3]).
 -export([handle_sync_event/4, handle_info/3, code_change/4]).
 
-start_link(HP) -> gen_fsm:start_link({local, pc_simple}, pc_simple, HP, []).
+start_link(Hp) -> gen_fsm:start_link({local, pc_simple}, pc_simple, Hp, []).
 
 stop() -> gen_fsm:send_all_state_event(pc_simple, stop).
 
-button(String) -> gen_fsm:send_event(pc_simple, {button, String}).
+attack(Damage) -> gen_fsm:send_event(pc_simple, {attack, Damage}).
 
 get_state() -> gen_fsm:sync_send_all_state_event(pc_simple, get_state).
 
-init(Code) -> {ok, locked, {[], Code}}.
+init(StartHp) -> {ok, good, {stat, StartHp}}.
 
-locked({button, String}, {SoFar, Code}) ->
-    case SoFar ++ String of
-        Code ->
-            io:fwrite("open!!~n"),
-            {next_state, open, {[], Code}, 3000};
-        Incomplete when length(Incomplete)<length(Code) ->
-            {next_state, locked, {Incomplete, Code}};
-        _Wrong ->
-            {next_state, locked, {[], Code}}
+good({attack, Damage}, {stat, Hp}) ->
+	NewHp = Hp - Damage,
+	if
+		NewHp < 1  ->
+			io:fwrite("uncon!!~n"),
+            {next_state, dead, {stat, NewHp}, 3000};
+
+        true ->
+            {next_state, good, {stat, NewHp}}
     end.
 
-open(timeout, StateData) ->
-    io:fwrite("close!!~n"),
-    {next_state, locked, StateData}.
+dead(timeout, StateData) ->
+    io:fwrite("respawn!!~n"),
+    {next_state, good, {stat, 1}}.
 
 handle_event(stop, _StateName, StateData) -> {stop, normal, StateData}.
 terminate(normal, _StateName, _StateData) -> ok.
