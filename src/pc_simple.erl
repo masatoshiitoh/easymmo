@@ -3,6 +3,7 @@
 
 -export([start_link/1, stop/1]).
 -export([attack/2, get_state/1]).
+-export([heal/2]).
 
 -export([init/1, good/2, dead/2]).
 -export([handle_event/3, terminate/3]).
@@ -17,6 +18,8 @@ stop(Pid) -> gen_fsm:send_all_state_event(Pid, stop).
 
 attack(Pid, Damage) -> gen_fsm:send_event(Pid, {attack, Damage}).
 
+heal(Pid, AddHp) -> gen_fsm:send_event(Pid, {heal, AddHp}).
+
 get_state(Pid) -> gen_fsm:sync_send_all_state_event(Pid, get_state).
 
 init(StartHp) -> {ok, good, {stat, StartHp}}.
@@ -30,7 +33,11 @@ good({attack, Damage}, {stat, Hp}) ->
 
         true ->
             {next_state, good, {stat, NewHp}}
-    end.
+    end;
+
+good({heal, AddHp}, {stat, Hp}) ->
+	NewHp = Hp + AddHp,
+	{next_state, good, {stat, NewHp}}.
 
 dead(timeout, StateData) ->
     io:fwrite("respawn!!~n"),
