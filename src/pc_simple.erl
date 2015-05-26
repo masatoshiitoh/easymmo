@@ -18,6 +18,7 @@ get_state() -> gen_fsm:sync_send_all_state_event(pc_simple, get_state).
 init(StartHp) -> {ok, good, {stat, StartHp}}.
 
 good({attack, Damage}, {stat, Hp}) ->
+	io:format("hp is ~p!!~n", [Hp]),
 	NewHp = Hp - Damage,
 	if
 		NewHp < 1  ->
