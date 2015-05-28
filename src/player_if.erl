@@ -133,10 +133,15 @@ impl_check_token(Uid, Token) ->
 
 impl_online(Uid, Token) ->
 	%% 1. check token
+	
 	%% 2. if valid token, start fsm
+
 	%% 3. store fsm pid to token data
+
 	%% 4. setup exchange
+
 	%% 5. request to notify me from *_srv.
+
 	{ok, Uid, Token}.
 
 %%

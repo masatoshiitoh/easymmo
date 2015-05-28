@@ -2,7 +2,7 @@
 %% online_srv.erl
 %%
 %% this module keep online players information. Key = Uid, Value = fsm pid.
-%%
+%% gen_server's State = dictionary()
 
 -module(online_srv).
 
@@ -34,23 +34,37 @@ lookup(Uid) ->
 start_link() ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-init(Args) ->
-    [] = Args,
-	{ok, []}.
+init(_Args) ->
+	{ok, dict:new()}.
 
 terminate(_Reason, State) ->
+	%%
 	%% TODO: kill all FSMs.
+	%%
+
 	ok.
 
+%%
+%% TODO: announce "remove existing FSM PID" to system.
+%%
 handle_call({add, Uid, Pid}, From, State) ->
-	{reply, ok, State};
+	Dict = State,
+	Dict2 = case dict:find(Uid, Dict) of
+		{ok, Pid} -> dict:store(Uid, Pid, dict:erase(Uid, Dict));
+		error -> dict:store(Uid, Pid, Dict);
+		_ -> Dict
+	end,
+	{reply, ok, Dict2};
 
 handle_call({del, Uid}, From, State) ->
-	{reply, ok, State};
+	Dict = State,
+	Dict2 = dict:erase(Uid, Dict),
+	{reply, ok, Dict2};
 
 handle_call({lookup, Uid}, From, State) ->
-	Pid = ng,
-	{reply, {ok, Pid}, State}.
+	Dict = State,
+	Result = dict:find(Uid, Dict),
+	{reply, {ok, Result}, State}.
 
 
 
