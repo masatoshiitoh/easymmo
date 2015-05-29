@@ -133,14 +133,19 @@ impl_check_token(Uid, Token) ->
 
 impl_online(Uid, Token) ->
 	%% 1. check token
+	ok = token_srv:check(Uid, Token),
 	
 	%% 2. if valid token, start fsm
+	{ok, Pid} = pc_simple:start_link(10),
 
 	%% 3. store fsm pid to token data
+	online_srv:add(Uid, Pid),
 
-	%% 4. setup exchange
+	%% 4. request to notify me from *_srv (exchange prepared automatically).
 
-	%% 5. request to notify me from *_srv.
+	%% TODO:write here
+	%% chat: subscribe topic
+	%% map: subscribe topic
 
 	{ok, Uid, Token}.
 

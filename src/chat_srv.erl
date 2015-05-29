@@ -13,11 +13,20 @@
 -export([handle_call/3]).
 -export([broadcast/2]).
 
+-export([connect/1]).
+-export([disconnect/1]).
+
 %%
 %% APIs
 %%
 broadcast(Id, Payload) ->
 	Reply = gen_server:call(?MODULE, {broadcast, Id, Payload}).
+
+connect(Id) ->
+	Reply = gen_server:call(?MODULE, {connect, Id}).
+
+disconnect(Id) ->
+	Reply = gen_server:call(?MODULE, {disconnect, Id}).
 
 %%
 %% Behaviors
