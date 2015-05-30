@@ -5,3 +5,11 @@
 
 -record(account, {login_id = "", password = ""}).
 
+
+-record(mqinfo, {
+	server_ip = "",
+	upstream_exchange = "",		%% From Client exchange name
+	downstream_exchange = "",	%% To Client exchange name
+	connection = "",
+	uplink_channel = "",		%% From Client Channel
+	downlink_channel = ""}).	%% To Client Channel

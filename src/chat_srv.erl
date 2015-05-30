@@ -19,14 +19,14 @@
 %%
 %% APIs
 %%
-broadcast(Id, Payload) ->
-	Reply = gen_server:call(?MODULE, {broadcast, Id, Payload}).
-
 connect(Id) ->
 	Reply = gen_server:call(?MODULE, {connect, Id}).
 
 disconnect(Id) ->
 	Reply = gen_server:call(?MODULE, {disconnect, Id}).
+
+broadcast(Id, Payload) ->
+	Reply = gen_server:call(?MODULE, {broadcast, Id, Payload}).
 
 %%
 %% Behaviors
