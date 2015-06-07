@@ -1,8 +1,17 @@
 %%
+%% chat_srv.erl
+%%
 %%
 
--module(chat).
+-module(chat_srv).
 -include_lib("amqp_client.hrl").
+
+-export([start_link/3]).
+-export([terminate/2]).
+-export([init/1]).
+-export([handle_info/2]).
+-export([handle_call/3]).
+-export([broadcast/2]).
 
 -export([connect/1]).
 -export([disconnect/1]).
@@ -54,7 +63,3 @@ handle_call({broadcast, Id, Payload}, From, State) ->
 		#'basic.publish'{exchange = FromClientEx, routing_key = <<"chat.open">> },
 		#amqp_msg{payload = BinMsg}),
 	{reply, ok, State}.
-
-
-
-

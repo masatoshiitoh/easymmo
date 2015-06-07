@@ -1,6 +1,9 @@
 -module(pc_simple).
 -behaviour(gen_fsm).
 
+-include_lib("amqp_client.hrl").
+-include("emmo.hrl").
+
 -export([start_link/1, stop/1]).
 -export([attack/2, get_state/1]).
 -export([heal/2]).
@@ -10,7 +13,6 @@
 -export([handle_sync_event/4, handle_info/3, code_change/4]).
 
 chat_init([ServerIp, ToClientEx, FromClientEx]) ->
-	[ServerIp, ToClientEx, FromClientEx] = Args,
 	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"chat.#">>])}.
 
 chat_terminate(_Reason, State) ->
@@ -51,7 +53,6 @@ chat_info({broadcast, Id, Payload}, From, State) ->
 
 
 init_move([ServerIp, ToClientEx, FromClientEx]) ->
-    [ServerIp, ToClientEx, FromClientEx] = Args,
 	{ok, bidir_mq:init_topic(ServerIp, ToClientEx, FromClientEx, [<<"move.#">>])}.
 
 stop_move(_Reason, State) ->
@@ -121,15 +122,14 @@ terminate(normal, _StateName, _StateData) -> ok.
 handle_sync_event(get_state, _From, StateName, StateData) ->
     {reply, StateName, StateName, StateData}.
 
-handle_info(_Info, StateName, StateData) -> {next_state, StateName, StateData}.
 
 handle_info(_Info, StateName, StateData) -> {next_state, StateName, StateData};
 
 %% just after setup, this message will arrive.
-handle_info(#'basic.consume_ok'{}, State) ->
+handle_info(#'basic.consume_ok'{}, good, State) ->
 	{noreply, State};
 
-handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , State) ->
+handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , good,  State) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = State,
 	%% BinMsg = [<<"info: Auto-reply, this is move_srv! your message is ">> , Body],
 	BinMsg = Body,
