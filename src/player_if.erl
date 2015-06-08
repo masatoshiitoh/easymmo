@@ -204,7 +204,7 @@ handle_info(#'basic.consume_ok'{}, State) ->
 
 %% drop all
 handle_info(X, State) ->
-	io:format("handle_info get unknown message ~p~n", [X]),
+	io:format("player_if:handle_info get unknown message ~p~n", [X]),
 	{noreply, State}.
 
 handle_call({broadcast, Id, Payload}, From, State) ->
