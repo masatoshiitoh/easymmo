@@ -133,7 +133,9 @@ handle_info(#'basic.consume_ok'{}, good, State) ->
 handle_info( {#'basic.deliver'{routing_key = _RoutingKey}, #amqp_msg{payload = Body}} , good,
 		#pcstat{stat = Hp, mq = Mq}) ->
 	{_ServerIp, ToClientEx, _FromClientEx, {_Connection, ChTC, _ChFC}} = Mq,
-	Message = Body ,
+	%% Message = Body ,
+	io:format("pc_simple instance : say Hello world~p~n", [self()]),
+	Message = <<"hello, world!!">> ,
 	amqp_channel:cast(ChTC,
 		#'basic.publish'{exchange = ToClientEx, routing_key = <<"chat.open">> },
 		#amqp_msg{payload = Message}),
