@@ -165,25 +165,27 @@ code_change(_OldVsn, StateName, StateData, _Extra) -> {ok, StateName, StateData}
 %% MQ support functions.
 %%
 
-connect_mq(ServerIp) ->
+-record(mqinfo, {server_ip, connection, channel, exchange}).
+
+mq_connect(ServerIp) ->
 0.
 
-disconnect_mq() ->
+mq_disconnect() ->
 0.
 
-listen_area_mq(chat, <<"chat.open.1">>) ->
+mq_listen_area(chat, <<"chat.open.1">>) ->
 0.
 
-change_area_mq(chat, <<"chat.open.2">>) ->
+mq_change_area(chat, <<"chat.open.2">>) ->
 0.
 
-end_area_mq() ->
+mq_end_area() ->
 0.
 
-listen_id_mq(cid, 1) ->
+mq_listen_id(cid, 1) ->
 0.
 
-end_id_mq() ->
+mq_end_id() ->
 0.
 
 
