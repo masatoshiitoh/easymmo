@@ -160,3 +160,30 @@ handle_info(_Info, StateName, StateData) -> {next_state, StateName, StateData}.
 code_change(_OldVsn, StateName, StateData, _Extra) -> {ok, StateName, StateData}.
 
 
+
+%%
+%% MQ support functions.
+%%
+
+connect_mq(ServerIp) ->
+0.
+
+disconnect_mq() ->
+0.
+
+listen_area_mq(chat, <<"chat.open.1">>) ->
+0.
+
+change_area_mq(chat, <<"chat.open.2">>) ->
+0.
+
+end_area_mq() ->
+0.
+
+listen_id_mq(cid, 1) ->
+0.
+
+end_id_mq() ->
+0.
+
+
