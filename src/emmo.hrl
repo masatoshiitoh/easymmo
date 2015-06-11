@@ -13,3 +13,5 @@
 	connection = "",
 	uplink_channel = "",		%% From Client Channel
 	downlink_channel = ""}).	%% To Client Channel
+
+%% -record(mqinfo, {server_ip, connection, channel, exchange}).

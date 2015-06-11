@@ -165,13 +165,55 @@ code_change(_OldVsn, StateName, StateData, _Extra) -> {ok, StateName, StateData}
 %% MQ support functions.
 %%
 
--record(mqinfo, {server_ip, connection, channel, exchange}).
 
 mq_connect(ServerIp) ->
-0.
+    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
+	0.
 
-mq_disconnect() ->
-0.
+mq_disconnect(Connection) ->
+    ok = amqp_connection:close(Connection),
+	0.
+
+mq_setup_send_topics(Connection, Exchange) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
+	Ch.
+
+mq_setup_receive_topics(Connection, Exchange, TopicList) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
+	#'queue.declare_ok'{queue = Queue} =
+	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
+	[amqp_channel:call(Ch, #'queue.bind'{
+		exchange = Exchange,
+		routing_key = BindingKey,
+		queue = Queue})
+	|| BindingKey <- TopicList],
+	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+	Ch.
+
+mq_setup_send_routing(Connection, Exchange) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
+	Ch.
+
+mq_setup_receive_topics(Connection, Exchange, TopicList) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
+	#'queue.declare_ok'{queue = Queue} =
+	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
+	[amqp_channel:call(Ch, #'queue.bind'{
+		exchange = Exchange,
+		routing_key = BindingKey,
+		queue = Queue})
+	|| BindingKey <- TopicList],
+	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+	Ch.
+
+mq_shutdown_connect(ChTC, ChFC) ->
+    ok = amqp_channel:close(ChFC),
+    ok = amqp_channel:close(ChTC),
+	ok.
 
 mq_listen_area(chat, <<"chat.open.1">>) ->
 0.
