@@ -14,6 +14,9 @@
 -export([handle_event/3, terminate/3]).
 -export([handle_sync_event/4, handle_info/3, code_change/4]).
 
+-export([mq_test/0]).
+-export([mq_test_sender/2]).
+
 -record(pcstat, {stat, mq}).
 
 activate() ->
@@ -168,7 +171,7 @@ code_change(_OldVsn, StateName, StateData, _Extra) -> {ok, StateName, StateData}
 
 mq_connect(ServerIp) ->
     {ok, Connection} = amqp_connection:start(#amqp_params_network{host = ServerIp}),
-	0.
+	Connection.
 
 mq_disconnect(Connection) ->
     ok = amqp_connection:close(Connection),
@@ -192,29 +195,19 @@ mq_setup_receive_topics(Connection, Exchange, TopicList) ->
 	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
 	Ch.
 
-mq_setup_send_routing(Connection, Exchange) ->
-    {ok, Ch} = amqp_connection:open_channel(Connection),
-    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
-	Ch.
-
-mq_setup_receive_topics(Connection, Exchange, TopicList) ->
-    {ok, Ch} = amqp_connection:open_channel(Connection),
-    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
-	#'queue.declare_ok'{queue = Queue} =
-	amqp_channel:call(Ch, #'queue.declare'{exclusive = true}),
-	[amqp_channel:call(Ch, #'queue.bind'{
+mq_stop_receive_topics(Ch, Queue, TopicList) ->
+	[amqp_channel:call(Ch, #'queue.unbind'{
 		exchange = Exchange,
 		routing_key = BindingKey,
 		queue = Queue})
 	|| BindingKey <- TopicList],
-	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
 	Ch.
 
-mq_change_receive_topics(Ch, Exchange, TopicList) ->
-    ok = amqp_channel:close(Ch),
-	NewCh = mq_setup_receive_topics(Connection, Exchange, TopicList),
-	NewCh.
 
+mq_setup_send_routing(Connection, Exchange) ->
+    {ok, Ch} = amqp_connection:open_channel(Connection),
+    amqp_channel:call(Ch, #'exchange.declare'{exchange = Exchange, type = <<"topic">>, auto_delete = true}),
+	Ch.
 
 mq_shutdown_connect(ChTC, ChFC) ->
     ok = amqp_channel:close(ChFC),
@@ -223,39 +216,41 @@ mq_shutdown_connect(ChTC, ChFC) ->
 
 
 
-
 mq_test() ->
+	io:format("please use topic t.1 or t.2~n",[]),
 	Connection = mq_connect("192.168.56.21"),
 	spawn_link(fun() -> mq_test_loop(Connection) end).
 
-mq_test_loop(Connection) ->
-	mq_test_receiver(Connection, <<"test.1">>, Timeout),
-	mq_test_receiver(Connection, <<"test.2">>, Timeout),
-	mq_test_loop(Connection).
 
-mq_test_receiver(Connection, BinTopic, Timeout) ->
-	io:format("now, set topic to ~p~n", [binary_to_term(BinTopic)]),
-	mq_setup_receive_topics(Connection, <<"testexchange">>, TopicList),
+mq_test_receiver(Timeout) ->
 	receive
-		#'basic.consume_ok'{} ->
-			mq_test_receiver(BinTopic, Timeout);
-		#'basic.deliver'{routing_key = RoutingKey}, #amqp_msg{payload = Body}} ->
+		#'basic.consume_ok'{} -> mq_test_receiver(Timeout);
+		{#'basic.deliver'{routing_key = RoutingKey}, #amqp_msg{payload = Body}} ->
 			io:format("now, receive from ~p,  body ~p~n", [RoutingKey, Body]),
-			mq_test_receiver(BinTopic, Timeout);
-		timeout Timeout ->
-			0
+			mq_test_receiver(Timeout)
+		after Timeout -> 0
 	end.
 
+mq_test_loop(Connection) ->
 
+	Ch1 = mq_setup_receive_topics(Connection, <<"testexchange">>, [<<"t.1">>]),
+	io:format("now, set topic to ~p~n", ["t.1"]),
+	mq_test_receiver(10000),
 
+	Ch2 = mq_setup_receive_topics(Connection, <<"testexchange">>, [<<"t.2">>]),
+	io:format("now, set topic to ~p~n", ["t.2"]),
+	mq_test_receiver(10000),
 
+	mq_test_loop(Connection).
 
 
 mq_test_sender(Topic, Message)->
 	Connection = mq_connect("192.168.56.21"),
 	Ch = mq_setup_send_topics(Connection, <<"testexchange">>),
-exit.
 
+	amqp_channel:cast(Ch,
+		#'basic.publish'{exchange = <<"testexchange">>, routing_key = list_to_binary(Topic) },
+		#amqp_msg{payload = Message}).
 
 
 mq_listen_area(chat, <<"chat.open.1">>) ->
