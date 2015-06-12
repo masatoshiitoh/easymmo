@@ -210,10 +210,53 @@ mq_setup_receive_topics(Connection, Exchange, TopicList) ->
 	amqp_channel:subscribe(Ch, #'basic.consume'{queue = Queue, no_ack = true}, self()),
 	Ch.
 
+mq_change_receive_topics(Ch, Exchange, TopicList) ->
+    ok = amqp_channel:close(Ch),
+	NewCh = mq_setup_receive_topics(Connection, Exchange, TopicList),
+	NewCh.
+
+
 mq_shutdown_connect(ChTC, ChFC) ->
     ok = amqp_channel:close(ChFC),
     ok = amqp_channel:close(ChTC),
 	ok.
+
+
+
+
+mq_test() ->
+	Connection = mq_connect("192.168.56.21"),
+	spawn_link(fun() -> mq_test_loop(Connection) end).
+
+mq_test_loop(Connection) ->
+	mq_test_receiver(Connection, <<"test.1">>, Timeout),
+	mq_test_receiver(Connection, <<"test.2">>, Timeout),
+	mq_test_loop(Connection).
+
+mq_test_receiver(Connection, BinTopic, Timeout) ->
+	io:format("now, set topic to ~p~n", [binary_to_term(BinTopic)]),
+	mq_setup_receive_topics(Connection, <<"testexchange">>, TopicList),
+	receive
+		#'basic.consume_ok'{} ->
+			mq_test_receiver(BinTopic, Timeout);
+		#'basic.deliver'{routing_key = RoutingKey}, #amqp_msg{payload = Body}} ->
+			io:format("now, receive from ~p,  body ~p~n", [RoutingKey, Body]),
+			mq_test_receiver(BinTopic, Timeout);
+		timeout Timeout ->
+			0
+	end.
+
+
+
+
+
+
+mq_test_sender(Topic, Message)->
+	Connection = mq_connect("192.168.56.21"),
+	Ch = mq_setup_send_topics(Connection, <<"testexchange">>),
+exit.
+
+
 
 mq_listen_area(chat, <<"chat.open.1">>) ->
 0.
