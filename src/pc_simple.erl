@@ -168,6 +168,27 @@ code_change(_OldVsn, StateName, StateData, _Extra) -> {ok, StateName, StateData}
 %% MQ support functions.
 %%
 
+
+%%
+%% following mq_* functions are prepareing for future experiments..
+%%
+
+mq_listen_area(chat, <<"chat.open.1">>) ->
+0.
+
+mq_change_area(chat, <<"chat.open.2">>) ->
+0.
+
+mq_end_area() ->
+0.
+
+mq_listen_id(cid, 1) ->
+0.
+
+mq_end_id() ->
+0.
+
+
 %% receiver
 mq_test() ->
 	io:format("please use topic t.1 or t.2~n",[]),
@@ -260,24 +281,3 @@ mq_test_receiver(Timeout) ->
 			mq_test_receiver(Timeout)
 		after Timeout -> 0
 	end.
-
-%%
-%% following mq_* functions are prepareing for future experiments..
-%%
-
-mq_listen_area(chat, <<"chat.open.1">>) ->
-0.
-
-mq_change_area(chat, <<"chat.open.2">>) ->
-0.
-
-mq_end_area() ->
-0.
-
-mq_listen_id(cid, 1) ->
-0.
-
-mq_end_id() ->
-0.
-
-
