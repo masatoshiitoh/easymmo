@@ -172,8 +172,8 @@ code_change(_OldVsn, StateName, StateData, _Extra) -> {ok, StateName, StateData}
 mq_test() ->
 	io:format("please use topic t.1 or t.2~n",[]),
 	ServerIp = "192.168.56.21",
-	{mq, ServerIp, Connection, Exchange, Channel, Topics} = mq_setup_topic_receiver(ServerIp, <<"testexchange">>, [<<"t.1">>]),
-	spawn_link(fun() -> mq_test_loop({mq, ServerIp, Connection, Exchange, Channel, Topics}) end).
+	{mq, ServerIp, Connection, Exchange, Channel, Queue, Topics} = mq_setup_topic_receiver(ServerIp, <<"testexchange">>, [<<"t.1">>]),
+	spawn_link(fun() -> mq_test_loop({mq, ServerIp, Connection, Exchange, Channel, Queue, Topics}) end).
 
 %% send message once.
 mq_test_sender(Topic, Message)->
@@ -189,14 +189,17 @@ mq_test_sender(Topic, Message)->
 
 mq_test_loop( {mq, ServerIp, Connection, Exchange, Channel, Queue, Topics}) ->
 
-	Ch1 = mq_replace_topic({mq, ServerIp, Connection, Exchange, Channel, Queue, Topics} , [<<"t.1">>] , [<<"t.2">>]),
+	{mq, S1, Co1, Ex1, Ch1, Q1, T1} =
+		mq_replace_topic({mq, ServerIp, Connection, Exchange, Channel, Queue, Topics} , [<<"t.1">>] , [<<"t.2">>]),
 	io:format("now, set topic to ~p~n", ["t.2"]),
 	mq_test_receiver(10000),
-	Ch1 = mq_replace_topic({mq, ServerIp, Connection, Exchange, Channel, Queue, Topics} , [<<"t.2">>] , [<<"t.1">>]),
+
+	{mq, S2, Co2, Ex2, Ch2, Q2, T2} =
+		mq_replace_topic({mq, S1, Co1, Ex1, Ch1, Q1, T1} , [<<"t.2">>] , [<<"t.1">>]),
 	io:format("now, set topic to ~p~n", ["t.1"]),
 	mq_test_receiver(10000),
 
-	mq_test_loop( {mq, ServerIp, Connection, Exchange, Channel, Queue, Topics}).
+	mq_test_loop( {mq, S2, Co2, Ex2, Ch2, Q2, T2} ).
 
 
 mq_setup_topic_receiver(ServerIp, Exchange, Topics) ->
@@ -219,12 +222,13 @@ mq_setup_topic_receiver(ServerIp, Exchange, Topics) ->
 
 
 mq_replace_topic( {mq, ServerIp, Connection, Exchange, Channel, Queue, Topics}, RemovingTopics, NewTopics) ->
-	Removings = lists:subtract(RemovingTopics, Topics),
-	mq_stop_receive_topics(Channel, Exchange, Queue, Removings),
 	Addings = lists:subtract(NewTopics, Topics),
-	mq_setup_receive_topics(Channel, Exchange,Queue,Addings),
+	Ch1 = mq_setup_receive_topics(Channel, Exchange,Queue,Addings),
+	Removings = lists:subtract(RemovingTopics, Topics),
+	Ch2 = mq_stop_receive_topics(Ch1, Exchange, Queue, Removings),
 	LatestTopics = lists:append(lists:subtract(Topics, Removings) , Addings),
-	{mq, ServerIp, Connection, Exchange, Channel, Queue, LatestTopics}.
+	amqp_channel:subscribe(Ch2, #'basic.consume'{queue = Queue, no_ack = true}, self()),
+	{mq, ServerIp, Connection, Exchange, Ch2, Queue, LatestTopics}.
 
 
 
