@@ -136,7 +136,7 @@ impl_online(Uid, Token) ->
 	ok = token_srv:check(Uid, Token),
 	
 	%% 2. if valid token, start fsm
-	{ok, Pid} = pc_simple:start_link(10),
+	{ok, Pid} = pc_fsm:start_link(10),
 
 	%% 3. store fsm pid to token data
 	online_srv:add(Uid, Pid),
