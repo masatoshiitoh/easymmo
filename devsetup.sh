@@ -22,7 +22,7 @@ cd otp_src_R16B03-1
 make
 sudo make install
 echo "PATH=$ERL_DEST/bin:\$PATH" >> $HOME/.profile
-export PATH=$ERL_DEST/bin:\$PATH
+export PATH=$ERL_DEST/bin:$PATH
 
 
 ## Install RabbitMQ server
