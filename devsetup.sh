@@ -48,6 +48,7 @@ cp rebar $EMMO_DEST
 
 ## Build easymmo
 cd $EMMO_DEST
+sudo apt-get -y install make
 make
 
 ## End of installation
