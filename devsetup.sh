@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# apt-get -y install git
-# git clone https://github.com/masatoshiitoh/easymmo.git
+# apt-get -y install git && git clone https://github.com/masatoshiitoh/easymmo.git && cd easymmo && make
 
 EMMO_DEST=`pwd`
 
@@ -13,7 +12,7 @@ REBAR_DEST=$HOME/rebar
 cd $HOME
 sudo apt-get update
 sudo apt-get -y install apt-transport-https
-sudo apt-get -y install wget
+sudo apt-get -y install wget make
 sudo apt-get -y install libc6-dev gcc g++ zlib1g-dev
 sudo apt-get -y install build-essential libncurses5-dev libssl-dev
 wget http://download.basho.co.jp.cs-ap-e2.ycloud.jp/otp/download/otp_src_R16B03-1.tar.gz
