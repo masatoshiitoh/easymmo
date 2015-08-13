@@ -44,7 +44,7 @@ init([]) ->
     {ok, { {one_for_one, 5, 10}, ChildSpec} }.
 
 player_if() ->
-	player_if_one("192.168.56.21", <<"xout">>, <<"xin">> ).
+	player_if_one("127.0.0.1", <<"xout">>, <<"xin">> ).
 
 player_if_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = player_if,
@@ -57,7 +57,7 @@ player_if_one(ServerIp, ToClientEx, FromClientEx) ->
 
 
 time_feeder() ->
-	time_feeder_one("192.168.56.21", <<"time">> ).
+	time_feeder_one("127.0.0.1", <<"time">> ).
 
 time_feeder_one(IpAddr, ToClientEx) ->
 	ID = time_feeder,
@@ -69,7 +69,7 @@ time_feeder_one(IpAddr, ToClientEx) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 auth_srv() ->
-	auth_srv_one("192.168.56.11", 8087).
+	auth_srv_one("127.0.0.1", 8087).
 
 auth_srv_one(RiakIp, RiakPort) ->
 	ID = auth_srv,
@@ -81,7 +81,7 @@ auth_srv_one(RiakIp, RiakPort) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 token_srv() ->
-	token_srv_one("192.168.56.11", 8087).
+	token_srv_one("127.0.0.1", 8087).
 
 token_srv_one(RiakIp, RiakPort) ->
 	ID = token_srv,
@@ -94,7 +94,7 @@ token_srv_one(RiakIp, RiakPort) ->
 
 
 chat_srv() ->
-	chat_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
+	chat_srv_one("127.0.0.1", <<"xout">>, <<"xin">> ).
 
 chat_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = chat_srv,
@@ -106,7 +106,7 @@ chat_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 move_srv() ->
-	move_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
+	move_srv_one("127.0.0.1", <<"xout">>, <<"xin">> ).
 
 move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = move_srv,
@@ -118,7 +118,7 @@ move_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 object_srv() ->
-	object_srv_one("192.168.56.21", <<"xout">>, <<"xin">> ).
+	object_srv_one("127.0.0.1", <<"xout">>, <<"xin">> ).
 
 object_srv_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = object_srv,
@@ -143,7 +143,7 @@ notifier_one() ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 pc_pool() ->
-	pc_pool_one("192.168.56.11", 8087).
+	pc_pool_one("127.0.0.1", 8087).
 
 pc_pool_one(RiakIp, RiakPort) ->
 	ID = pc_pool,
@@ -156,7 +156,7 @@ pc_pool_one(RiakIp, RiakPort) ->
 
 
 npc_pool() ->
-	npc_pool_one("192.168.56.11", 8087).
+	npc_pool_one("127.0.0.1", 8087).
 
 npc_pool_one(RiakIp, RiakPort) ->
 	ID = npc_pool,
@@ -168,7 +168,7 @@ npc_pool_one(RiakIp, RiakPort) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 npc_script() ->
-	npc_script_one("192.168.56.11", 8087).
+	npc_script_one("127.0.0.1", 8087).
 
 npc_script_one(RiakIp, RiakPort) ->
 	ID = npc_script,
@@ -180,7 +180,7 @@ npc_script_one(RiakIp, RiakPort) ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 emmo_map() ->
-	emmo_map_one("192.168.56.11", 8087).
+	emmo_map_one("127.0.0.1", 8087).
 
 emmo_map_one(RiakIp, RiakPort) ->
 	ID = emmo_map,
@@ -193,7 +193,7 @@ emmo_map_one(RiakIp, RiakPort) ->
 
 
 emmo_char() ->
-	emmo_char_one("192.168.56.11", 8087).
+	emmo_char_one("127.0.0.1", 8087).
 
 emmo_char_one(RiakIp, RiakPort) ->
 	ID = emmo_char,
@@ -206,7 +206,7 @@ emmo_char_one(RiakIp, RiakPort) ->
 
 
 rutil() ->
-	rutil_one("192.168.56.11", 8087).
+	rutil_one("127.0.0.1", 8087).
 
 rutil_one(RiakIp, RiakPort) ->
 	ID = rutil,
@@ -232,7 +232,7 @@ path_finder_one() ->
 	_ChildSpec = {ID, StartFunc, Restart, Shutdown, Type, Modules}.
 
 mq_watch() ->
-	mq_watch_one("192.168.56.21", <<"xout">>, <<"xin">> ).
+	mq_watch_one("127.0.0.1", <<"xout">>, <<"xin">> ).
 
 mq_watch_one(ServerIp, ToClientEx, FromClientEx) ->
 	ID = mq_watch,

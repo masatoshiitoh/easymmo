@@ -25,7 +25,7 @@
 -export([rpc_offline/2]).
 
 rpctest() ->
-    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "192.168.56.21"}),
+    {ok, Connection} = amqp_connection:start(#amqp_params_network{host = "127.0.0.1"}),
 	io:format("connection ok~n",[]),
 
 	EchoPid = amqp_rpc_client:start(Connection, <<"echo">>),

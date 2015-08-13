@@ -54,7 +54,7 @@ mq_end_id() ->
 %% receiver
 mq_test() ->
 	io:format("please use topic t.1 or t.2~n",[]),
-	ServerIp = "192.168.56.21",
+	ServerIp = "127.0.0.1",
 	spawn_link(fun() ->
 		{mq, ServerIp, Connection, Exchange, Channel, Queue, Topics} =
 			mq_setup_topic_receiver(ServerIp, <<"testexchange">>, [<<"t.1">>]),
@@ -84,7 +84,7 @@ mq_test_receiver(Timeout) ->
 
 %% send message once.
 mq_test_sender(Topic, Message)->
-	Connection = mq_connect("192.168.56.21"),
+	Connection = mq_connect("127.0.0.1"),
 	Ch = mq_setup_send_topics(Connection, <<"testexchange">>),
 	amqp_channel:cast(Ch,
 		#'basic.publish'{exchange = <<"testexchange">>, routing_key = list_to_binary(Topic) },

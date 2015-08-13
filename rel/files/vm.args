@@ -1,5 +1,5 @@
 ## Name of the node
--name easymmo@192.168.56.31
+-name easymmo@127.0.0.1
 
 ## Cookie for distributed erlang
 -setcookie easymmo

@@ -30,7 +30,7 @@ heal(Pid, AddHp) -> gen_fsm:send_event(Pid, {heal, AddHp}).
 get_state(Pid) -> gen_fsm:sync_send_all_state_event(Pid, get_state).
 
 init(StartHp) ->
-	{ok, Mq} = chat_init("192.168.56.21", <<"xout">>, <<"xin">> ),
+	{ok, Mq} = chat_init("127.0.0.1", <<"xout">>, <<"xin">> ),
 	{ok, good, #pcstat{stat = StartHp, mq = Mq}}.
 
 good({attack, Damage}, #pcstat{stat = Hp, mq = Mq}) ->
