@@ -22,7 +22,7 @@ cd otp_src_R16B03-1
 make
 sudo make install
 echo "PATH=$ERL_DEST/bin:\$PATH" >> $HOME/.profile
-export PATH=$ERL_DEST/bin:$PATH
+PATH=$ERL_DEST/bin:$PATH
 
 
 ## Install RabbitMQ server
@@ -49,7 +49,7 @@ cp rebar $EMMO_DEST
 ## Build easymmo
 cd $EMMO_DEST
 sudo apt-get -y install make
-make
+make release
 
 ## End of installation
 echo "Please start riak."
